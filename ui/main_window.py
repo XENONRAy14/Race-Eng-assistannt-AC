@@ -520,12 +520,10 @@ class MainWindow(QMainWindow):
     
     def _poll_telemetry(self) -> None:
         """Poll telemetry data from AC shared memory."""
-        if not self.shared_memory.is_connected:
-            if not self.shared_memory.connect():
-                return
-        
         try:
             live_data = self.shared_memory.get_live_data()
+            if not live_data.is_connected:
+                return
             if live_data:
                 # Update telemetry panel
                 telemetry = TelemetryData(
@@ -925,6 +923,10 @@ class MainWindow(QMainWindow):
     def _poll_ac_status(self) -> None:
         """Poll AC shared memory for game status and car/track detection."""
         try:
+            # Try to connect if not connected
+            if not self.shared_memory.is_connected:
+                self.shared_memory.connect()
+            
             live_data = self.shared_memory.get_live_data()
             
             if live_data.is_connected and live_data.status in [ACStatus.AC_LIVE, ACStatus.AC_PAUSE]:
@@ -933,9 +935,6 @@ class MainWindow(QMainWindow):
                 
                 # Check for car/track change
                 if live_data.car_model and live_data.track:
-                    self.statusbar.showMessage(
-                        f"Live: car={live_data.car_model} track={live_data.track} cfg={live_data.track_config}"
-                    )
                     if (live_data.car_model != self._last_detected_car or 
                         live_data.track != self._last_detected_track):
                         
@@ -948,14 +947,23 @@ class MainWindow(QMainWindow):
                             live_data.track,
                             live_data.track_config
                         )
+            elif live_data.is_connected and live_data.status == ACStatus.AC_OFF:
+                # Connected but game in menu/loading
+                self.game_status_label.setText("🎮 AC: En menu")
+                self.game_status_label.setStyleSheet("color: #FF9800;")
             else:
-                # Game not running or not in session
+                # Game not running - disconnect to retry next poll
+                if self.shared_memory.is_connected:
+                    self.shared_memory.disconnect()
                 self.game_status_label.setText("🎮 Jeu: Non détecté")
                 self.game_status_label.setStyleSheet("color: #888;")
                 
         except Exception as e:
-            # Silently handle errors (AC not running)
-            pass
+            # Disconnect on error to retry next poll
+            if self.shared_memory.is_connected:
+                self.shared_memory.disconnect()
+            self.game_status_label.setText("🎮 Jeu: Non détecté")
+            self.game_status_label.setStyleSheet("color: #888;")
     
     def _update_game_status(self, live_data) -> None:
         """Update the game status display."""

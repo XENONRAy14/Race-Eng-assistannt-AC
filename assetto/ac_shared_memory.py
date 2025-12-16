@@ -353,6 +353,7 @@ class ACSharedMemory:
         
         self._is_connected = False
     
+    @property
     def is_connected(self) -> bool:
         """Check if connected to AC."""
         return self._is_connected
