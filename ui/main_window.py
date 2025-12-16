@@ -929,8 +929,8 @@ class MainWindow(QMainWindow):
             
             live_data = self.shared_memory.get_live_data()
             
-            if live_data.is_connected and live_data.status in [ACStatus.AC_LIVE, ACStatus.AC_PAUSE]:
-                # Game is running
+            if live_data.is_connected and live_data.status in [ACStatus.AC_LIVE, ACStatus.AC_PAUSE, ACStatus.AC_REPLAY]:
+                # Game is running (live, paused, or replay)
                 self._update_game_status(live_data)
                 
                 # Check for car/track change
@@ -951,8 +951,12 @@ class MainWindow(QMainWindow):
                 # Connected but game in menu/loading
                 self.game_status_label.setText("🎮 AC: En menu")
                 self.game_status_label.setStyleSheet("color: #FF9800;")
+            elif live_data.is_connected:
+                # Connected but unknown status - still show as connected
+                self.game_status_label.setText("🎮 AC: Connecté")
+                self.game_status_label.setStyleSheet("color: #FF9800;")
             else:
-                # Game not running - disconnect to retry next poll
+                # Not connected - disconnect to retry next poll
                 if self.shared_memory.is_connected:
                     self.shared_memory.disconnect()
                 self.game_status_label.setText("🎮 Jeu: Non détecté")

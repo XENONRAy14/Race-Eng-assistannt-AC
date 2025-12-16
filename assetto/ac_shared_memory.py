@@ -417,8 +417,14 @@ class ACSharedMemory:
         # Read graphics info (session)
         graphics = self.read_graphics()
         if graphics:
-            data.status = ACStatus(graphics.status)
-            data.session_type = ACSessionType(graphics.session)
+            try:
+                data.status = ACStatus(graphics.status)
+            except ValueError:
+                data.status = ACStatus.AC_OFF
+            try:
+                data.session_type = ACSessionType(graphics.session)
+            except ValueError:
+                data.session_type = ACSessionType.AC_UNKNOWN
             data.is_in_pit = bool(graphics.isInPit)
             data.is_in_pit_lane = bool(graphics.isInPitLane)
             data.completed_laps = graphics.completedLaps
