@@ -962,14 +962,14 @@ class MainWindow(QMainWindow):
                 # Not connected - disconnect to retry next poll
                 if self.shared_memory.is_connected:
                     self.shared_memory.disconnect()
-                self.game_status_label.setText("🎮 Jeu: Non détecté")
+                self.game_status_label.setText("🎮 Lancez une session AC")
                 self.game_status_label.setStyleSheet("color: #888;")
                 
         except Exception as e:
             # Disconnect on error to retry next poll
             if self.shared_memory.is_connected:
                 self.shared_memory.disconnect()
-            self.game_status_label.setText("🎮 Jeu: Non détecté")
+            self.game_status_label.setText("🎮 Lancez une session AC")
             self.game_status_label.setStyleSheet("color: #888;")
     
     def _update_game_status(self, live_data) -> None:
