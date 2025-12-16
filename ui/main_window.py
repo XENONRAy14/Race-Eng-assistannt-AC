@@ -526,19 +526,22 @@ class MainWindow(QMainWindow):
                 return
             if live_data:
                 # Update telemetry panel
+                # Tire temps are in tyre_temp_core tuple (FL, FR, RL, RR)
+                tire_temps = live_data.tyre_temp_core if live_data.tyre_temp_core else (0, 0, 0, 0)
+                
                 telemetry = TelemetryData(
                     speed_kmh=live_data.speed_kmh,
                     rpm=live_data.rpm,
-                    max_rpm=live_data.max_rpm if hasattr(live_data, 'max_rpm') else 8000,
+                    max_rpm=live_data.max_rpm,
                     gear=live_data.gear,
-                    tire_temp_fl=live_data.tire_temp_fl if hasattr(live_data, 'tire_temp_fl') else 0,
-                    tire_temp_fr=live_data.tire_temp_fr if hasattr(live_data, 'tire_temp_fr') else 0,
-                    tire_temp_rl=live_data.tire_temp_rl if hasattr(live_data, 'tire_temp_rl') else 0,
-                    tire_temp_rr=live_data.tire_temp_rr if hasattr(live_data, 'tire_temp_rr') else 0,
-                    g_lateral=live_data.g_lateral if hasattr(live_data, 'g_lateral') else 0,
-                    g_longitudinal=live_data.g_longitudinal if hasattr(live_data, 'g_longitudinal') else 0,
-                    throttle=live_data.gas if hasattr(live_data, 'gas') else 0,
-                    brake=live_data.brake if hasattr(live_data, 'brake') else 0,
+                    tire_temp_fl=tire_temps[0] if len(tire_temps) > 0 else 0,
+                    tire_temp_fr=tire_temps[1] if len(tire_temps) > 1 else 0,
+                    tire_temp_rl=tire_temps[2] if len(tire_temps) > 2 else 0,
+                    tire_temp_rr=tire_temps[3] if len(tire_temps) > 3 else 0,
+                    g_lateral=live_data.g_lateral,
+                    g_longitudinal=live_data.g_longitudinal,
+                    throttle=live_data.gas,
+                    brake=live_data.brake,
                     is_connected=True
                 )
                 self.telemetry_panel.update_telemetry(telemetry)
@@ -546,11 +549,11 @@ class MainWindow(QMainWindow):
                 # Feed data to driving analyzer
                 metrics = self.driving_analyzer.add_sample(
                     speed=live_data.speed_kmh,
-                    throttle=live_data.gas if hasattr(live_data, 'gas') else 0,
-                    brake=live_data.brake if hasattr(live_data, 'brake') else 0,
-                    steering=live_data.steer_angle if hasattr(live_data, 'steer_angle') else 0,
-                    g_lat=live_data.g_lateral if hasattr(live_data, 'g_lateral') else 0,
-                    g_lon=live_data.g_longitudinal if hasattr(live_data, 'g_longitudinal') else 0
+                    throttle=live_data.gas,
+                    brake=live_data.brake,
+                    steering=live_data.steer_angle,
+                    g_lat=live_data.g_lateral,
+                    g_lon=live_data.g_longitudinal
                 )
                 
                 # Update driving style widget if we got new analysis

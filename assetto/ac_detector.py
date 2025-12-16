@@ -17,7 +17,7 @@ from models.track import Track
 class ACInstallation:
     """Represents an Assetto Corsa installation."""
     
-    documents_path: Path
+    documents_path: Optional[Path] = None
     game_path: Optional[Path] = None
     
     # Derived paths

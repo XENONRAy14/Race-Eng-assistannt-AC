@@ -223,10 +223,15 @@ class ACLiveData:
     # Live telemetry
     speed_kmh: float = 0.0
     rpm: int = 0
+    max_rpm: int = 8000
     gear: int = 0
     gas: float = 0.0
     brake: float = 0.0
     steer_angle: float = 0.0
+    
+    # G-forces
+    g_lateral: float = 0.0
+    g_longitudinal: float = 0.0
     
     # Tyre data
     tyre_pressure: tuple[float, float, float, float] = (0.0, 0.0, 0.0, 0.0)
@@ -432,6 +437,11 @@ class ACSharedMemory:
             data.best_lap_time = graphics.bestTime.strip('\x00')
             data.last_lap_time = graphics.lastTime.strip('\x00')
         
+        # Read static info for max RPM
+        static = self.read_static()
+        if static:
+            data.max_rpm = static.maxRpm if static.maxRpm > 0 else 8000
+        
         # Read physics info (telemetry)
         physics = self.read_physics()
         if physics:
@@ -444,6 +454,10 @@ class ACSharedMemory:
             data.brake_bias = physics.brakeBias
             data.air_temp = physics.airTemp
             data.road_temp = physics.roadTemp
+            
+            # G-forces from acceleration
+            data.g_lateral = physics.accG[0] if len(physics.accG) > 0 else 0.0
+            data.g_longitudinal = physics.accG[2] if len(physics.accG) > 2 else 0.0
             
             data.tyre_pressure = tuple(physics.wheelsPressure)
             data.tyre_temp_core = tuple(physics.tyreCoreTemperature)
