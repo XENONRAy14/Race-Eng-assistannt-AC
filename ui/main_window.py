@@ -996,7 +996,8 @@ class MainWindow(QMainWindow):
                 # Not connected - disconnect to retry next poll
                 if self.shared_memory.is_connected:
                     self.shared_memory.disconnect()
-                self.game_status_label.setText("🎮 Lancez une session AC")
+                # Show more helpful message
+                self.game_status_label.setText("🎮 En attente de session AC...")
                 self.game_status_label.setStyleSheet("color: #888;")
                 
         except Exception as e:

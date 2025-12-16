@@ -273,10 +273,24 @@ class ACSharedMemory:
     Provides live game data without any injection or modification.
     """
     
-    # Shared memory names
-    PHYSICS_MAP = "Local\\acpmf_physics"
-    GRAPHICS_MAP = "Local\\acpmf_graphics"
-    STATIC_MAP = "Local\\acpmf_static"
+    # Shared memory names - try multiple variants
+    # Standard AC uses "Local\\acpmf_*"
+    # Some versions may use different names
+    PHYSICS_MAPS = [
+        "Local\\acpmf_physics",
+        "acpmf_physics",
+        "Local\\AC_PHYSICS",
+    ]
+    GRAPHICS_MAPS = [
+        "Local\\acpmf_graphics",
+        "acpmf_graphics",
+        "Local\\AC_GRAPHICS",
+    ]
+    STATIC_MAPS = [
+        "Local\\acpmf_static",
+        "acpmf_static",
+        "Local\\AC_STATIC",
+    ]
     
     def __init__(self):
         """Initialize shared memory reader."""
@@ -312,6 +326,14 @@ class ACSharedMemory:
         if handle:
             _CloseHandle(ctypes.c_void_p(handle))
     
+    def _try_open_mapping_variants(self, names: list[str], size: int) -> tuple[Optional[int], Optional[int]]:
+        """Try to open a mapping using multiple name variants."""
+        for name in names:
+            handle, view = self._open_mapping(name, size)
+            if handle and view:
+                return handle, view
+        return None, None
+    
     def connect(self) -> bool:
         """
         Connect to AC shared memory.
@@ -319,9 +341,10 @@ class ACSharedMemory:
         """
         try:
             # Open-only: never create mappings (prevents potential AC crash)
-            p_handle, p_view = self._open_mapping(self.PHYSICS_MAP, ctypes.sizeof(SPageFilePhysics))
-            g_handle, g_view = self._open_mapping(self.GRAPHICS_MAP, ctypes.sizeof(SPageFileGraphic))
-            s_handle, s_view = self._open_mapping(self.STATIC_MAP, ctypes.sizeof(SPageFileStatic))
+            # Try multiple name variants for compatibility
+            p_handle, p_view = self._try_open_mapping_variants(self.PHYSICS_MAPS, ctypes.sizeof(SPageFilePhysics))
+            g_handle, g_view = self._try_open_mapping_variants(self.GRAPHICS_MAPS, ctypes.sizeof(SPageFileGraphic))
+            s_handle, s_view = self._try_open_mapping_variants(self.STATIC_MAPS, ctypes.sizeof(SPageFileStatic))
 
             if not (p_handle and p_view and g_handle and g_view and s_handle and s_view):
                 self._close_mapping(p_handle, p_view)
