@@ -34,6 +34,7 @@ from ai.driving_analyzer import DrivingAnalyzer
 from assetto.ac_connector import ACConnector
 from assetto.ac_shared_memory import ACSharedMemory, ACStatus
 from data.setup_repository import SetupRepository
+from config.user_settings import get_user_settings
 
 
 class MainWindow(QMainWindow):
@@ -166,6 +167,10 @@ class MainWindow(QMainWindow):
         self.connector.detector._installation.is_valid = True
         self.connector.detector._installation.can_write_setups = True
         
+        # Save the path for next launch
+        user_settings = get_user_settings()
+        user_settings.set_ac_game_path(folder_path)
+        
         # Update connection status in UI
         self.connection_label.setText("🟢 Connecté à Assetto Corsa")
         self.connection_label.setStyleSheet("color: #4CAF50;")
@@ -177,8 +182,29 @@ class MainWindow(QMainWindow):
             self,
             "Dossier AC configuré",
             f"Dossier Assetto Corsa configuré:\n{folder_path}\n\n"
-            f"Les voitures et pistes ont été rechargées."
+            f"Les voitures et pistes ont été rechargées.\n"
+            f"Ce chemin sera mémorisé pour les prochains lancements."
         )
+    
+    def _apply_saved_ac_path(self, folder_path: Path) -> None:
+        """Apply a saved AC path to the connector."""
+        from assetto.ac_detector import ACInstallation
+        
+        # Find documents path
+        docs_path = Path.home() / "Documents" / "Assetto Corsa"
+        if not docs_path.exists():
+            docs_path.mkdir(parents=True, exist_ok=True)
+        
+        # Create installation object
+        self.connector.detector._installation = ACInstallation(documents_path=docs_path)
+        self.connector.detector._installation.game_path = folder_path
+        self.connector.detector._installation.cars_path = folder_path / "content" / "cars"
+        self.connector.detector._installation.tracks_path = folder_path / "content" / "tracks"
+        self.connector.detector._installation.is_valid = True
+        self.connector.detector._installation.can_write_setups = True
+        
+        # Setup writer needs the setups path
+        self.connector.writer.set_base_path(docs_path / "setups")
     
     def _on_refresh_content(self) -> None:
         """Refresh cars and tracks from AC folder."""
@@ -682,6 +708,14 @@ class MainWindow(QMainWindow):
     def _initialize(self) -> None:
         """Initialize the application after UI is ready."""
         self.statusbar.showMessage("Connexion à Assetto Corsa...")
+        
+        # Load saved AC path from user settings
+        user_settings = get_user_settings()
+        saved_game_path = user_settings.get_ac_game_path()
+        
+        if saved_game_path and saved_game_path.exists():
+            # Apply saved path before connecting
+            self._apply_saved_ac_path(saved_game_path)
         
         # Connect to AC
         status = self.connector.connect()
