@@ -1,0 +1,97 @@
+{
+    "application": {
+        "name": "Race Engineer Assistant",
+        "version": "1.0.0",
+        "language": "fr",
+        "theme": "dark"
+    },
+    "assetto_corsa": {
+        "auto_detect": true,
+        "documents_path": null,
+        "game_path": null,
+        "default_track_type": "touge"
+    },
+    "setup_generation": {
+        "default_behavior": "balanced",
+        "auto_save_to_db": true,
+        "auto_write_to_ac": true,
+        "backup_existing": true,
+        "filename_prefix": "rea_"
+    },
+    "driver_profile": {
+        "default_experience": "intermediate",
+        "remember_last_profile": true,
+        "auto_recommend_behavior": true
+    },
+    "ai": {
+        "use_rules_engine": true,
+        "use_scoring_engine": true,
+        "confidence_threshold": 0.6,
+        "show_reasoning": true
+    },
+    "ui": {
+        "window_width": 1200,
+        "window_height": 800,
+        "show_advanced_options": false,
+        "show_ai_details": true,
+        "slider_precision": 1
+    },
+    "behaviors": {
+        "safe": {
+            "display_name": "Safe Touge",
+            "description": "Maximum stability and predictability",
+            "icon": "shield",
+            "color": "#4CAF50"
+        },
+        "balanced": {
+            "display_name": "Balanced Touge",
+            "description": "Well-rounded grip and rotation",
+            "icon": "balance",
+            "color": "#2196F3"
+        },
+        "attack": {
+            "display_name": "Attack Touge",
+            "description": "Aggressive, maximum performance",
+            "icon": "bolt",
+            "color": "#FF9800"
+        },
+        "drift": {
+            "display_name": "Drift Touge",
+            "description": "Optimized for controlled sliding",
+            "icon": "rotate",
+            "color": "#E91E63"
+        }
+    },
+    "sliders": {
+        "stability_rotation": {
+            "label_left": "Stabilité",
+            "label_right": "Rotation",
+            "default": 50,
+            "tooltip": "Équilibre entre stabilité et agilité"
+        },
+        "grip_slide": {
+            "label_left": "Grip",
+            "label_right": "Glisse",
+            "default": 30,
+            "tooltip": "Préférence grip maximum vs glisse contrôlée"
+        },
+        "safety_aggression": {
+            "label_left": "Sécurité",
+            "label_right": "Agressivité",
+            "default": 40,
+            "tooltip": "Style de conduite prudent vs agressif"
+        },
+        "drift_grip": {
+            "label_left": "Drift",
+            "label_right": "Grip",
+            "default": 70,
+            "tooltip": "Setup orienté drift vs grip pur"
+        },
+        "comfort_performance": {
+            "label_left": "Confort",
+            "label_right": "Performance",
+            "default": 50,
+            "tooltip": "Suspensions souples vs rigides"
+        }
+    }
+}

@@ -1,0 +1,446 @@
+"""
+Setup Engine - Generates complete car setups.
+Combines behavior modifiers, rule adjustments, and base values.
+"""
+
+from typing import Optional
+from models.setup import Setup, SetupSection
+from models.driver_profile import DriverProfile
+from models.car import Car
+from models.track import Track
+from core.behavior_engine import BehaviorEngine, Behavior
+from core.rules_engine import RulesEngine
+from core.scoring_engine import ScoringEngine, ScoreBreakdown
+
+
+class SetupEngine:
+    """
+    Main engine for generating car setups.
+    Orchestrates behavior, rules, and scoring engines.
+    """
+    
+    # Base setup values (neutral starting point)
+    BASE_VALUES = {
+        "TYRES": {
+            "PRESSURE_LF": 26.0,
+            "PRESSURE_RF": 26.0,
+            "PRESSURE_LR": 26.0,
+            "PRESSURE_RR": 26.0
+        },
+        "BRAKES": {
+            "BIAS": 58.0,
+            "FRONT_BIAS": 58.0,
+            "BRAKE_POWER_MULT": 1.0
+        },
+        "SUSPENSION": {
+            "SPRING_RATE_LF": 80000,
+            "SPRING_RATE_RF": 80000,
+            "SPRING_RATE_LR": 70000,
+            "SPRING_RATE_RR": 70000,
+            "DAMP_BUMP_LF": 3000,
+            "DAMP_BUMP_RF": 3000,
+            "DAMP_BUMP_LR": 2800,
+            "DAMP_BUMP_RR": 2800,
+            "DAMP_REBOUND_LF": 5000,
+            "DAMP_REBOUND_RF": 5000,
+            "DAMP_REBOUND_LR": 4500,
+            "DAMP_REBOUND_RR": 4500,
+            "RIDE_HEIGHT_LF": 50,
+            "RIDE_HEIGHT_RF": 50,
+            "RIDE_HEIGHT_LR": 55,
+            "RIDE_HEIGHT_RR": 55
+        },
+        "DIFFERENTIAL": {
+            "POWER": 45.0,
+            "COAST": 35.0,
+            "PRELOAD": 25.0
+        },
+        "ALIGNMENT": {
+            "CAMBER_LF": -3.0,
+            "CAMBER_RF": -3.0,
+            "CAMBER_LR": -2.0,
+            "CAMBER_RR": -2.0,
+            "TOE_LF": 0.0,
+            "TOE_RF": 0.0,
+            "TOE_LR": 0.1,
+            "TOE_RR": 0.1
+        },
+        "AERO": {
+            "WING_FRONT": 0,
+            "WING_REAR": 0
+        },
+        "FUEL": {
+            "FUEL": 30
+        },
+        "ARB": {
+            "FRONT": 5,
+            "REAR": 4
+        }
+    }
+    
+    # Value limits (min, max) for clamping
+    VALUE_LIMITS = {
+        "TYRES": {
+            "PRESSURE_LF": (20.0, 35.0),
+            "PRESSURE_RF": (20.0, 35.0),
+            "PRESSURE_LR": (20.0, 35.0),
+            "PRESSURE_RR": (20.0, 35.0)
+        },
+        "BRAKES": {
+            "BIAS": (40.0, 80.0),
+            "FRONT_BIAS": (40.0, 80.0),
+            "BRAKE_POWER_MULT": (0.5, 1.5)
+        },
+        "SUSPENSION": {
+            "SPRING_RATE_LF": (40000, 150000),
+            "SPRING_RATE_RF": (40000, 150000),
+            "SPRING_RATE_LR": (35000, 130000),
+            "SPRING_RATE_RR": (35000, 130000),
+            "DAMP_BUMP_LF": (1000, 8000),
+            "DAMP_BUMP_RF": (1000, 8000),
+            "DAMP_BUMP_LR": (1000, 8000),
+            "DAMP_BUMP_RR": (1000, 8000),
+            "DAMP_REBOUND_LF": (2000, 12000),
+            "DAMP_REBOUND_RF": (2000, 12000),
+            "DAMP_REBOUND_LR": (2000, 12000),
+            "DAMP_REBOUND_RR": (2000, 12000),
+            "RIDE_HEIGHT_LF": (30, 80),
+            "RIDE_HEIGHT_RF": (30, 80),
+            "RIDE_HEIGHT_LR": (35, 85),
+            "RIDE_HEIGHT_RR": (35, 85)
+        },
+        "DIFFERENTIAL": {
+            "POWER": (0.0, 100.0),
+            "COAST": (0.0, 100.0),
+            "PRELOAD": (0.0, 200.0)
+        },
+        "ALIGNMENT": {
+            "CAMBER_LF": (-5.0, 0.0),
+            "CAMBER_RF": (-5.0, 0.0),
+            "CAMBER_LR": (-4.0, 0.0),
+            "CAMBER_RR": (-4.0, 0.0),
+            "TOE_LF": (-0.5, 0.5),
+            "TOE_RF": (-0.5, 0.5),
+            "TOE_LR": (-0.3, 0.5),
+            "TOE_RR": (-0.3, 0.5)
+        },
+        "AERO": {
+            "WING_FRONT": (0, 20),
+            "WING_REAR": (0, 20)
+        },
+        "FUEL": {
+            "FUEL": (5, 100)
+        },
+        "ARB": {
+            "FRONT": (0, 10),
+            "REAR": (0, 10)
+        }
+    }
+    
+    def __init__(self):
+        """Initialize setup engine with sub-engines."""
+        self.behavior_engine = BehaviorEngine()
+        self.rules_engine = RulesEngine()
+        self.scoring_engine = ScoringEngine()
+    
+    def generate_setup(
+        self,
+        profile: DriverProfile,
+        behavior_id: str,
+        car: Optional[Car] = None,
+        track: Optional[Track] = None,
+        setup_name: str = "Generated Setup"
+    ) -> tuple[Setup, ScoreBreakdown]:
+        """
+        Generate a complete setup based on profile and behavior.
+        Returns the setup and its score breakdown.
+        """
+        # Get behavior
+        behavior = self.behavior_engine.get_behavior(behavior_id)
+        if not behavior:
+            behavior = self.behavior_engine.get_behavior("balanced")
+        
+        # Start with base values
+        setup = self._create_base_setup(car, track, setup_name, behavior_id)
+        
+        # Apply behavior modifiers
+        setup = self._apply_behavior_modifiers(setup, behavior)
+        
+        # Apply rule-based adjustments
+        setup = self._apply_rule_adjustments(setup, profile, car, track, behavior)
+        
+        # Apply driver profile fine-tuning
+        setup = self._apply_profile_tuning(setup, profile)
+        
+        # Clamp all values to valid ranges
+        setup = self._clamp_values(setup)
+        
+        # Score the final setup
+        score = self.scoring_engine.score_setup(setup, profile, behavior, car, track)
+        setup.ai_score = score.total_score
+        setup.ai_confidence = score.confidence
+        
+        return setup, score
+    
+    def _create_base_setup(
+        self,
+        car: Optional[Car],
+        track: Optional[Track],
+        name: str,
+        behavior_id: str
+    ) -> Setup:
+        """Create a setup with base values."""
+        setup = Setup(
+            name=name,
+            car_id=car.car_id if car else "",
+            track_id=track.full_id if track else "",
+            behavior=behavior_id
+        )
+        
+        # Initialize with base values
+        for section_name, values in self.BASE_VALUES.items():
+            setup.sections[section_name] = SetupSection(section_name, values.copy())
+        
+        return setup
+    
+    def _apply_behavior_modifiers(self, setup: Setup, behavior: Behavior) -> Setup:
+        """Apply behavior modifiers to the setup."""
+        
+        # Suspension stiffness
+        if behavior.suspension_stiffness != 0:
+            multiplier = 1.0 + (behavior.suspension_stiffness * 0.2)
+            for key in ["SPRING_RATE_LF", "SPRING_RATE_RF", "SPRING_RATE_LR", "SPRING_RATE_RR"]:
+                current = setup.get_value("SUSPENSION", key, 70000)
+                setup.set_value("SUSPENSION", key, int(current * multiplier))
+        
+        # Suspension damping
+        if behavior.suspension_damping != 0:
+            multiplier = 1.0 + (behavior.suspension_damping * 0.15)
+            for key in ["DAMP_BUMP_LF", "DAMP_BUMP_RF", "DAMP_BUMP_LR", "DAMP_BUMP_RR",
+                       "DAMP_REBOUND_LF", "DAMP_REBOUND_RF", "DAMP_REBOUND_LR", "DAMP_REBOUND_RR"]:
+                current = setup.get_value("SUSPENSION", key, 3000)
+                setup.set_value("SUSPENSION", key, int(current * multiplier))
+        
+        # Ride height
+        if behavior.ride_height != 0:
+            adjustment = int(behavior.ride_height * 10)
+            for key in ["RIDE_HEIGHT_LF", "RIDE_HEIGHT_RF", "RIDE_HEIGHT_LR", "RIDE_HEIGHT_RR"]:
+                current = setup.get_value("SUSPENSION", key, 50)
+                setup.set_value("SUSPENSION", key, current + adjustment)
+        
+        # ARB
+        if behavior.arb_front != 0:
+            current = setup.get_value("ARB", "FRONT", 5)
+            setup.set_value("ARB", "FRONT", current + int(behavior.arb_front * 3))
+        
+        if behavior.arb_rear != 0:
+            current = setup.get_value("ARB", "REAR", 4)
+            setup.set_value("ARB", "REAR", current + int(behavior.arb_rear * 3))
+        
+        # Differential
+        if behavior.diff_power != 0:
+            current = setup.get_value("DIFFERENTIAL", "POWER", 45)
+            setup.set_value("DIFFERENTIAL", "POWER", current + behavior.diff_power * 25)
+        
+        if behavior.diff_coast != 0:
+            current = setup.get_value("DIFFERENTIAL", "COAST", 35)
+            setup.set_value("DIFFERENTIAL", "COAST", current + behavior.diff_coast * 20)
+        
+        if behavior.diff_preload != 0:
+            current = setup.get_value("DIFFERENTIAL", "PRELOAD", 25)
+            setup.set_value("DIFFERENTIAL", "PRELOAD", current + behavior.diff_preload * 30)
+        
+        # Camber
+        if behavior.camber_front != 0:
+            adjustment = behavior.camber_front * -1.0  # Negative = more negative camber
+            for key in ["CAMBER_LF", "CAMBER_RF"]:
+                current = setup.get_value("ALIGNMENT", key, -3.0)
+                setup.set_value("ALIGNMENT", key, current + adjustment)
+        
+        if behavior.camber_rear != 0:
+            adjustment = behavior.camber_rear * -0.8
+            for key in ["CAMBER_LR", "CAMBER_RR"]:
+                current = setup.get_value("ALIGNMENT", key, -2.0)
+                setup.set_value("ALIGNMENT", key, current + adjustment)
+        
+        # Toe
+        if behavior.toe_front != 0:
+            adjustment = behavior.toe_front * 0.15
+            for key in ["TOE_LF", "TOE_RF"]:
+                current = setup.get_value("ALIGNMENT", key, 0.0)
+                setup.set_value("ALIGNMENT", key, current + adjustment)
+        
+        if behavior.toe_rear != 0:
+            adjustment = behavior.toe_rear * 0.15
+            for key in ["TOE_LR", "TOE_RR"]:
+                current = setup.get_value("ALIGNMENT", key, 0.1)
+                setup.set_value("ALIGNMENT", key, current + adjustment)
+        
+        # Brakes
+        if behavior.brake_bias != 0:
+            current = setup.get_value("BRAKES", "BIAS", 58)
+            setup.set_value("BRAKES", "BIAS", current + behavior.brake_bias * 5)
+            setup.set_value("BRAKES", "FRONT_BIAS", current + behavior.brake_bias * 5)
+        
+        # Tyre pressure
+        if behavior.tyre_pressure != 0:
+            adjustment = behavior.tyre_pressure * 2.0
+            for key in ["PRESSURE_LF", "PRESSURE_RF", "PRESSURE_LR", "PRESSURE_RR"]:
+                current = setup.get_value("TYRES", key, 26.0)
+                setup.set_value("TYRES", key, current + adjustment)
+        
+        return setup
+    
+    def _apply_rule_adjustments(
+        self,
+        setup: Setup,
+        profile: DriverProfile,
+        car: Optional[Car],
+        track: Optional[Track],
+        behavior: Behavior
+    ) -> Setup:
+        """Apply rule-based adjustments from the rules engine."""
+        adjustments = self.rules_engine.get_adjustments(profile, car, track, behavior)
+        
+        # Track multipliers for special parameters
+        spring_multiplier = 1.0
+        damp_multiplier = 1.0
+        ride_height_multiplier = 1.0
+        camber_multiplier = 1.0
+        
+        for section, params in adjustments.items():
+            for param, (adj_type, value) in params.items():
+                # Handle special multiplier parameters
+                if param == "SPRING_RATE_MULTIPLIER":
+                    spring_multiplier *= value
+                    continue
+                elif param == "DAMP_MULTIPLIER":
+                    damp_multiplier *= value
+                    continue
+                elif param == "RIDE_HEIGHT_MULTIPLIER":
+                    ride_height_multiplier *= value
+                    continue
+                elif param == "CAMBER_MULTIPLIER":
+                    camber_multiplier *= value
+                    continue
+                elif param == "PRESSURE_ALL":
+                    # Apply to all tyre pressures
+                    for p in ["PRESSURE_LF", "PRESSURE_RF", "PRESSURE_LR", "PRESSURE_RR"]:
+                        current = setup.get_value("TYRES", p, 26.0)
+                        setup.set_value("TYRES", p, current + value)
+                    continue
+                
+                # Apply adjustment based on type
+                current = setup.get_value(section, param)
+                if current is None:
+                    continue
+                
+                if adj_type == "absolute":
+                    setup.set_value(section, param, value)
+                elif adj_type == "relative":
+                    setup.set_value(section, param, current + value)
+                elif adj_type == "multiply":
+                    setup.set_value(section, param, current * value)
+        
+        # Apply accumulated multipliers
+        if spring_multiplier != 1.0:
+            for key in ["SPRING_RATE_LF", "SPRING_RATE_RF", "SPRING_RATE_LR", "SPRING_RATE_RR"]:
+                current = setup.get_value("SUSPENSION", key, 70000)
+                setup.set_value("SUSPENSION", key, int(current * spring_multiplier))
+        
+        if damp_multiplier != 1.0:
+            for key in ["DAMP_BUMP_LF", "DAMP_BUMP_RF", "DAMP_BUMP_LR", "DAMP_BUMP_RR",
+                       "DAMP_REBOUND_LF", "DAMP_REBOUND_RF", "DAMP_REBOUND_LR", "DAMP_REBOUND_RR"]:
+                current = setup.get_value("SUSPENSION", key, 3000)
+                setup.set_value("SUSPENSION", key, int(current * damp_multiplier))
+        
+        if ride_height_multiplier != 1.0:
+            for key in ["RIDE_HEIGHT_LF", "RIDE_HEIGHT_RF", "RIDE_HEIGHT_LR", "RIDE_HEIGHT_RR"]:
+                current = setup.get_value("SUSPENSION", key, 50)
+                setup.set_value("SUSPENSION", key, int(current * ride_height_multiplier))
+        
+        if camber_multiplier != 1.0:
+            for key in ["CAMBER_LF", "CAMBER_RF", "CAMBER_LR", "CAMBER_RR"]:
+                current = setup.get_value("ALIGNMENT", key, -2.5)
+                setup.set_value("ALIGNMENT", key, current * camber_multiplier)
+        
+        return setup
+    
+    def _apply_profile_tuning(self, setup: Setup, profile: DriverProfile) -> Setup:
+        """Apply fine-tuning based on driver profile factors."""
+        factors = profile.get_all_factors()
+        
+        # Experience-based adjustments
+        exp_mult = factors["experience"]
+        
+        # Beginners get more conservative diff settings
+        if exp_mult < 0.7:
+            diff_power = setup.get_value("DIFFERENTIAL", "POWER", 45)
+            setup.set_value("DIFFERENTIAL", "POWER", diff_power * 0.85)
+        
+        # Experts can handle more aggressive settings
+        if exp_mult > 1.0:
+            # Allow more negative camber
+            for key in ["CAMBER_LF", "CAMBER_RF"]:
+                current = setup.get_value("ALIGNMENT", key, -3.0)
+                setup.set_value("ALIGNMENT", key, current * 1.1)
+        
+        return setup
+    
+    def _clamp_values(self, setup: Setup) -> Setup:
+        """Clamp all values to valid ranges."""
+        for section_name, limits in self.VALUE_LIMITS.items():
+            section = setup.get_section(section_name)
+            if not section:
+                continue
+            
+            for param, (min_val, max_val) in limits.items():
+                value = section.get(param)
+                if value is not None:
+                    clamped = max(min_val, min(max_val, value))
+                    # Round appropriately
+                    if isinstance(min_val, int):
+                        clamped = int(round(clamped))
+                    else:
+                        clamped = round(clamped, 2)
+                    section.set(param, clamped)
+        
+        return setup
+    
+    def get_available_behaviors(self) -> list[dict]:
+        """Get list of available behaviors with descriptions."""
+        behaviors = self.behavior_engine.get_all_behaviors()
+        return [
+            {
+                "id": b.behavior_id,
+                "name": b.name,
+                "description": b.description
+            }
+            for b in behaviors
+        ]
+    
+    def preview_setup(
+        self,
+        profile: DriverProfile,
+        behavior_id: str,
+        car: Optional[Car] = None,
+        track: Optional[Track] = None
+    ) -> dict:
+        """Generate a preview of setup values without creating full setup."""
+        setup, score = self.generate_setup(profile, behavior_id, car, track, "Preview")
+        
+        return {
+            "behavior": behavior_id,
+            "score": score.total_score,
+            "confidence": score.confidence,
+            "key_values": {
+                "diff_power": setup.get_value("DIFFERENTIAL", "POWER"),
+                "diff_coast": setup.get_value("DIFFERENTIAL", "COAST"),
+                "brake_bias": setup.get_value("BRAKES", "BIAS"),
+                "front_camber": setup.get_value("ALIGNMENT", "CAMBER_LF"),
+                "rear_camber": setup.get_value("ALIGNMENT", "CAMBER_LR"),
+                "front_arb": setup.get_value("ARB", "FRONT"),
+                "rear_arb": setup.get_value("ARB", "REAR")
+            },
+            "notes": score.notes
+        }
