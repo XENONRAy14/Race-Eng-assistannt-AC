@@ -7,7 +7,8 @@ from PySide6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QLabel, QPushButton, QFrame, QSplitter, QStatusBar,
     QMessageBox, QTextEdit, QGroupBox, QScrollArea,
-    QProgressBar, QInputDialog, QFileDialog, QMenuBar, QMenu
+    QProgressBar, QInputDialog, QFileDialog, QMenuBar, QMenu,
+    QTabWidget
 )
 from PySide6.QtCore import Qt, QTimer
 from PySide6.QtGui import QFont, QColor, QPalette
@@ -18,6 +19,9 @@ from pathlib import Path
 from ui.car_track_selector import CarTrackSelector
 from ui.behavior_selector import BehaviorSelector
 from ui.sliders_panel import SlidersPanel
+from ui.telemetry_panel import TelemetryPanel, TelemetryData
+from ui.presets_panel import PresetsPanel
+from ui.driving_style_widget import DrivingStyleWidget
 
 from models.driver_profile import DriverProfile
 from models.setup import Setup
@@ -26,6 +30,7 @@ from models.track import Track
 
 from core.setup_engine import SetupEngine
 from ai.decision_engine import DecisionEngine
+from ai.driving_analyzer import DrivingAnalyzer
 from assetto.ac_connector import ACConnector
 from assetto.ac_shared_memory import ACSharedMemory, ACStatus
 from data.setup_repository import SetupRepository
@@ -51,12 +56,14 @@ class MainWindow(QMainWindow):
         self.setup_engine = SetupEngine()
         self.decision_engine = DecisionEngine(self.setup_engine)
         self.shared_memory = ACSharedMemory()
+        self.driving_analyzer = DrivingAnalyzer()
         
         # State
         self._current_profile: Optional[DriverProfile] = None
         self._current_setup: Optional[Setup] = None
         self._last_score = None
         self._ac_polling_timer: Optional[QTimer] = None
+        self._telemetry_timer: Optional[QTimer] = None
         self._last_detected_car: str = ""
         self._last_detected_track: str = ""
         self._cars_cache: list[Car] = []
@@ -329,7 +336,7 @@ class MainWindow(QMainWindow):
         return panel
     
     def _create_right_panel(self) -> QWidget:
-        """Create the right panel with output and preview."""
+        """Create the right panel with tabs for different features."""
         panel = QFrame()
         panel.setStyleSheet("""
             QFrame {
@@ -339,23 +346,59 @@ class MainWindow(QMainWindow):
         """)
         
         layout = QVBoxLayout(panel)
-        layout.setContentsMargins(10, 10, 10, 10)
+        layout.setContentsMargins(5, 5, 5, 5)
         
-        # Title
-        title = QLabel("Aperçu Setup")
-        title.setStyleSheet("""
-            font-size: 16px;
-            font-weight: bold;
-            color: #fff;
-            padding: 5px;
+        # Tab widget for different panels
+        self.right_tabs = QTabWidget()
+        self.right_tabs.setStyleSheet("""
+            QTabWidget::pane {
+                border: none;
+                background-color: #1e1e1e;
+            }
+            QTabBar::tab {
+                background-color: #2a2a2a;
+                color: #888;
+                padding: 8px 12px;
+                margin-right: 2px;
+                border-top-left-radius: 6px;
+                border-top-right-radius: 6px;
+            }
+            QTabBar::tab:selected {
+                background-color: #4a69bd;
+                color: white;
+            }
+            QTabBar::tab:hover:!selected {
+                background-color: #3a3a4a;
+            }
         """)
-        layout.addWidget(title)
         
-        # Separator
-        separator = QFrame()
-        separator.setFrameShape(QFrame.HLine)
-        separator.setStyleSheet("background-color: #444;")
-        layout.addWidget(separator)
+        # Tab 1: Setup Preview (original)
+        setup_tab = self._create_setup_preview_tab()
+        self.right_tabs.addTab(setup_tab, "📊 Setup")
+        
+        # Tab 2: Live Telemetry
+        self.telemetry_panel = TelemetryPanel()
+        self.right_tabs.addTab(self.telemetry_panel, "📡 Télémétrie")
+        
+        # Tab 3: Driving Analysis
+        self.driving_style_widget = DrivingStyleWidget()
+        self.driving_style_widget.apply_recommendation.connect(self._on_apply_style_recommendation)
+        self.right_tabs.addTab(self.driving_style_widget, "🧠 Analyse")
+        
+        # Tab 4: Presets
+        self.presets_panel = PresetsPanel()
+        self.presets_panel.preset_loaded.connect(self._on_preset_loaded)
+        self.right_tabs.addTab(self.presets_panel, "⭐ Presets")
+        
+        layout.addWidget(self.right_tabs)
+        
+        return panel
+    
+    def _create_setup_preview_tab(self) -> QWidget:
+        """Create the setup preview tab content."""
+        tab = QWidget()
+        layout = QVBoxLayout(tab)
+        layout.setContentsMargins(10, 10, 10, 10)
         
         # Score display
         score_group = QGroupBox("Score IA")
@@ -442,7 +485,81 @@ class MainWindow(QMainWindow):
         
         layout.addStretch()
         
-        return panel
+        return tab
+    
+    def _on_apply_style_recommendation(self, behavior: str) -> None:
+        """Apply the recommended behavior from driving analysis."""
+        self.behavior_selector.set_behavior(behavior)
+        self._on_behavior_changed(behavior)
+        self.statusbar.showMessage(f"✨ Mode '{behavior}' appliqué selon ton style de conduite!")
+    
+    def _on_preset_loaded(self, preset) -> None:
+        """Load a preset into the current settings."""
+        # Set behavior
+        self.behavior_selector.set_behavior(preset.behavior)
+        
+        # Set profile values
+        if self._current_profile:
+            self._current_profile.stability_factor = preset.stability
+            self._current_profile.rotation_factor = preset.rotation
+            self._current_profile.grip_factor = preset.grip
+            self._current_profile.drift_factor = preset.drift
+            self._current_profile.aggression_factor = preset.aggression
+            self._current_profile.comfort_factor = preset.comfort
+            self.sliders_panel.set_profile(self._current_profile)
+        
+        self._update_preview()
+        self.statusbar.showMessage(f"⭐ Preset '{preset.name}' chargé!")
+    
+    def _start_telemetry_polling(self) -> None:
+        """Start polling telemetry data from AC."""
+        if self._telemetry_timer is None:
+            self._telemetry_timer = QTimer(self)
+            self._telemetry_timer.timeout.connect(self._poll_telemetry)
+        self._telemetry_timer.start(50)  # 20Hz for smooth display
+    
+    def _poll_telemetry(self) -> None:
+        """Poll telemetry data from AC shared memory."""
+        if not self.shared_memory.is_connected:
+            if not self.shared_memory.connect():
+                return
+        
+        try:
+            live_data = self.shared_memory.get_live_data()
+            if live_data:
+                # Update telemetry panel
+                telemetry = TelemetryData(
+                    speed_kmh=live_data.speed_kmh,
+                    rpm=live_data.rpm,
+                    max_rpm=live_data.max_rpm if hasattr(live_data, 'max_rpm') else 8000,
+                    gear=live_data.gear,
+                    tire_temp_fl=live_data.tire_temp_fl if hasattr(live_data, 'tire_temp_fl') else 0,
+                    tire_temp_fr=live_data.tire_temp_fr if hasattr(live_data, 'tire_temp_fr') else 0,
+                    tire_temp_rl=live_data.tire_temp_rl if hasattr(live_data, 'tire_temp_rl') else 0,
+                    tire_temp_rr=live_data.tire_temp_rr if hasattr(live_data, 'tire_temp_rr') else 0,
+                    g_lateral=live_data.g_lateral if hasattr(live_data, 'g_lateral') else 0,
+                    g_longitudinal=live_data.g_longitudinal if hasattr(live_data, 'g_longitudinal') else 0,
+                    throttle=live_data.gas if hasattr(live_data, 'gas') else 0,
+                    brake=live_data.brake if hasattr(live_data, 'brake') else 0,
+                    is_connected=True
+                )
+                self.telemetry_panel.update_telemetry(telemetry)
+                
+                # Feed data to driving analyzer
+                metrics = self.driving_analyzer.add_sample(
+                    speed=live_data.speed_kmh,
+                    throttle=live_data.gas if hasattr(live_data, 'gas') else 0,
+                    brake=live_data.brake if hasattr(live_data, 'brake') else 0,
+                    steering=live_data.steer_angle if hasattr(live_data, 'steer_angle') else 0,
+                    g_lat=live_data.g_lateral if hasattr(live_data, 'g_lateral') else 0,
+                    g_lon=live_data.g_longitudinal if hasattr(live_data, 'g_longitudinal') else 0
+                )
+                
+                # Update driving style widget if we got new analysis
+                if metrics:
+                    self.driving_style_widget.update_metrics(metrics)
+        except Exception:
+            pass
     
     def _create_action_bar(self) -> QWidget:
         """Create the bottom action bar."""
@@ -613,10 +730,17 @@ class MainWindow(QMainWindow):
         
         # Start AC live polling
         self._start_ac_polling()
+        
+        # Start telemetry polling for live data
+        self._start_telemetry_polling()
     
     def _on_selection_changed(self, car: Optional[Car], track: Optional[Track]) -> None:
         """Handle car/track selection change."""
         self._update_recommendation()
+        
+        # Update presets panel with selected car
+        if car:
+            self.presets_panel.set_current_car(car.car_id, car.name)
     
     def _on_behavior_changed(self, behavior_id: str) -> None:
         """Handle behavior selection change."""
