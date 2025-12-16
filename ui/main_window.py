@@ -1004,8 +1004,8 @@ class MainWindow(QMainWindow):
             # Disconnect on error to retry next poll
             if self.shared_memory.is_connected:
                 self.shared_memory.disconnect()
-            self.game_status_label.setText("🎮 Lancez une session AC")
-            self.game_status_label.setStyleSheet("color: #888;")
+            self.game_status_label.setText(f"🎮 Erreur: {str(e)[:30]}")
+            self.game_status_label.setStyleSheet("color: #F44336;")
     
     def _update_game_status(self, live_data) -> None:
         """Update the game status display."""
