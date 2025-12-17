@@ -1,6 +1,6 @@
 """
 Telemetry Panel - Live telemetry display from Assetto Corsa.
-Shows speed, RPM, tire temps, G-forces in a clean, ergonomic layout.
+Modern Initial D black/red gradient design.
 """
 
 from PySide6.QtWidgets import (
@@ -21,26 +21,22 @@ class TelemetryData:
     max_rpm: int = 8000
     gear: int = 0
     
-    # Tire temps (°C)
     tire_temp_fl: float = 0.0
     tire_temp_fr: float = 0.0
     tire_temp_rl: float = 0.0
     tire_temp_rr: float = 0.0
     
-    # G-forces
     g_lateral: float = 0.0
     g_longitudinal: float = 0.0
     
-    # Brake/throttle
     throttle: float = 0.0
     brake: float = 0.0
     
-    # Status
     is_connected: bool = False
 
 
-class GaugeWidget(QFrame):
-    """Simple circular-style gauge display."""
+class ModernGaugeWidget(QFrame):
+    """Modern gauge with Initial D styling."""
     
     def __init__(self, title: str, unit: str = "", max_value: float = 100, parent=None):
         super().__init__(parent)
@@ -49,45 +45,60 @@ class GaugeWidget(QFrame):
         self.max_value = max_value
         self.value = 0.0
         
-        self.setFrameStyle(QFrame.StyledPanel | QFrame.Raised)
+        self.setFrameStyle(QFrame.NoFrame)
         self.setStyleSheet("""
-            GaugeWidget {
-                background-color: #1a1a2e;
-                border: 2px solid #16213e;
-                border-radius: 10px;
-                padding: 5px;
+            QFrame {
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                    stop:0 #1a0000, stop:1 #000000);
+                border: 2px solid #ff0000;
+                border-radius: 12px;
+                padding: 10px;
             }
         """)
         
         layout = QVBoxLayout(self)
-        layout.setSpacing(2)
-        layout.setContentsMargins(8, 8, 8, 8)
+        layout.setSpacing(5)
+        layout.setContentsMargins(15, 12, 15, 12)
         
         # Title
         self.title_label = QLabel(title)
         self.title_label.setAlignment(Qt.AlignCenter)
-        self.title_label.setStyleSheet("color: #888; font-size: 11px;")
+        self.title_label.setStyleSheet("""
+            color: #ff0000;
+            font-family: 'Arial', sans-serif;
+            font-size: 12px;
+            font-weight: bold;
+            letter-spacing: 1px;
+        """)
         layout.addWidget(self.title_label)
         
         # Value
         self.value_label = QLabel("0")
         self.value_label.setAlignment(Qt.AlignCenter)
-        self.value_label.setStyleSheet("color: #fff; font-size: 24px; font-weight: bold;")
+        self.value_label.setStyleSheet("""
+            color: #ffffff;
+            font-family: 'Arial', sans-serif;
+            font-size: 32px;
+            font-weight: bold;
+        """)
         layout.addWidget(self.value_label)
         
         # Unit
         self.unit_label = QLabel(unit)
         self.unit_label.setAlignment(Qt.AlignCenter)
-        self.unit_label.setStyleSheet("color: #666; font-size: 10px;")
+        self.unit_label.setStyleSheet("""
+            color: #888;
+            font-family: 'Arial', sans-serif;
+            font-size: 11px;
+        """)
         layout.addWidget(self.unit_label)
         
-        self.setMinimumSize(80, 80)
+        self.setMinimumSize(120, 110)
     
     def set_value(self, value: float):
         """Update the gauge value."""
         self.value = value
         
-        # Format based on value size
         if value >= 1000:
             self.value_label.setText(f"{int(value)}")
         elif value >= 100:
@@ -97,355 +108,448 @@ class GaugeWidget(QFrame):
         else:
             self.value_label.setText(f"{value:.2f}")
         
-        # Color based on percentage of max
-        pct = min(value / self.max_value, 1.0) if self.max_value > 0 else 0
-        if pct > 0.9:
-            color = "#ff4444"  # Red - danger
-        elif pct > 0.7:
-            color = "#ffaa00"  # Orange - warning
+        # Color based on percentage
+        percent = (value / self.max_value) * 100 if self.max_value > 0 else 0
+        
+        if percent > 90:
+            self.value_label.setStyleSheet("""
+                color: #ff0000;
+                font-family: 'Arial', sans-serif;
+                font-size: 32px;
+                font-weight: bold;
+            """)
+        elif percent > 75:
+            self.value_label.setStyleSheet("""
+                color: #ff8800;
+                font-family: 'Arial', sans-serif;
+                font-size: 32px;
+                font-weight: bold;
+            """)
         else:
-            color = "#44ff44"  # Green - good
-        
-        self.value_label.setStyleSheet(f"color: {color}; font-size: 24px; font-weight: bold;")
-
-
-class TireTempsWidget(QFrame):
-    """4-tire temperature display in car layout."""
-    
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        
-        self.setFrameStyle(QFrame.StyledPanel | QFrame.Raised)
-        self.setStyleSheet("""
-            TireTempsWidget {
-                background-color: #1a1a2e;
-                border: 2px solid #16213e;
-                border-radius: 10px;
-            }
-        """)
-        
-        layout = QVBoxLayout(self)
-        layout.setSpacing(5)
-        layout.setContentsMargins(10, 10, 10, 10)
-        
-        # Title
-        title = QLabel("🏎️ Températures Pneus")
-        title.setAlignment(Qt.AlignCenter)
-        title.setStyleSheet("color: #aaa; font-size: 12px; font-weight: bold;")
-        layout.addWidget(title)
-        
-        # Tire grid (car shape)
-        tire_layout = QGridLayout()
-        tire_layout.setSpacing(10)
-        
-        self.tire_fl = self._create_tire_label("AV-G")
-        self.tire_fr = self._create_tire_label("AV-D")
-        self.tire_rl = self._create_tire_label("AR-G")
-        self.tire_rr = self._create_tire_label("AR-D")
-        
-        tire_layout.addWidget(self.tire_fl, 0, 0)
-        tire_layout.addWidget(self.tire_fr, 0, 1)
-        tire_layout.addWidget(self.tire_rl, 1, 0)
-        tire_layout.addWidget(self.tire_rr, 1, 1)
-        
-        layout.addLayout(tire_layout)
-        
-        self.setMinimumSize(150, 120)
-    
-    def _create_tire_label(self, name: str) -> QLabel:
-        """Create a tire temperature label."""
-        label = QLabel(f"{name}\n--°C")
-        label.setAlignment(Qt.AlignCenter)
-        label.setStyleSheet("""
-            background-color: #2a2a4e;
-            border-radius: 5px;
-            padding: 5px;
-            color: #888;
-            font-size: 11px;
-        """)
-        label.setMinimumSize(60, 45)
-        return label
-    
-    def _get_temp_color(self, temp: float) -> str:
-        """Get color based on tire temperature."""
-        if temp < 60:
-            return "#4444ff"  # Blue - cold
-        elif temp < 80:
-            return "#44ff44"  # Green - optimal
-        elif temp < 100:
-            return "#ffaa00"  # Orange - hot
-        else:
-            return "#ff4444"  # Red - overheating
-    
-    def set_temps(self, fl: float, fr: float, rl: float, rr: float):
-        """Update tire temperatures."""
-        for label, temp, name in [
-            (self.tire_fl, fl, "AV-G"),
-            (self.tire_fr, fr, "AV-D"),
-            (self.tire_rl, rl, "AR-G"),
-            (self.tire_rr, rr, "AR-D")
-        ]:
-            color = self._get_temp_color(temp)
-            label.setText(f"{name}\n{temp:.0f}°C")
-            label.setStyleSheet(f"""
-                background-color: #2a2a4e;
-                border-radius: 5px;
-                padding: 5px;
-                color: {color};
-                font-size: 11px;
+            self.value_label.setStyleSheet("""
+                color: #ffffff;
+                font-family: 'Arial', sans-serif;
+                font-size: 32px;
                 font-weight: bold;
             """)
 
 
-class GForceWidget(QFrame):
-    """G-force indicator with visual dot."""
+class TireTempsWidget(QFrame):
+    """Tire temperatures display with Initial D styling."""
     
     def __init__(self, parent=None):
         super().__init__(parent)
-        
-        self.g_lat = 0.0
-        self.g_lon = 0.0
-        
-        self.setFrameStyle(QFrame.StyledPanel | QFrame.Raised)
+        self.setFrameStyle(QFrame.NoFrame)
         self.setStyleSheet("""
-            GForceWidget {
-                background-color: #1a1a2e;
-                border: 2px solid #16213e;
-                border-radius: 10px;
+            QFrame {
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                    stop:0 #1a0000, stop:1 #000000);
+                border: 2px solid #ff0000;
+                border-radius: 12px;
+                padding: 10px;
             }
         """)
         
         layout = QVBoxLayout(self)
-        layout.setSpacing(5)
-        layout.setContentsMargins(10, 10, 10, 10)
+        layout.setSpacing(10)
+        layout.setContentsMargins(15, 12, 15, 12)
         
         # Title
-        title = QLabel("📊 G-Forces")
+        title = QLabel("🔥 Températures Pneus")
         title.setAlignment(Qt.AlignCenter)
-        title.setStyleSheet("color: #aaa; font-size: 12px; font-weight: bold;")
+        title.setStyleSheet("""
+            color: #ff0000;
+            font-family: 'Arial', sans-serif;
+            font-size: 13px;
+            font-weight: bold;
+            letter-spacing: 1px;
+        """)
         layout.addWidget(title)
         
-        # G values
-        values_layout = QHBoxLayout()
+        # Grid layout for tires
+        grid = QGridLayout()
+        grid.setSpacing(8)
         
-        self.lat_label = QLabel("Lat: 0.00g")
-        self.lat_label.setStyleSheet("color: #44aaff; font-size: 11px;")
-        values_layout.addWidget(self.lat_label)
+        # Create tire labels
+        self.tire_labels = {}
+        positions = [
+            ("AVG", 0, 0), ("AVD", 0, 1),
+            ("ARG", 1, 0), ("ARD", 1, 1)
+        ]
         
-        self.lon_label = QLabel("Lon: 0.00g")
-        self.lon_label.setStyleSheet("color: #ff44aa; font-size: 11px;")
-        values_layout.addWidget(self.lon_label)
+        for name, row, col in positions:
+            container = QFrame()
+            container.setStyleSheet("""
+                QFrame {
+                    background-color: rgba(0, 0, 0, 0.5);
+                    border: 1px solid #ff0000;
+                    border-radius: 6px;
+                    padding: 8px;
+                }
+            """)
+            
+            v_layout = QVBoxLayout(container)
+            v_layout.setSpacing(3)
+            v_layout.setContentsMargins(8, 6, 8, 6)
+            
+            name_label = QLabel(name)
+            name_label.setAlignment(Qt.AlignCenter)
+            name_label.setStyleSheet("""
+                color: #888;
+                font-family: 'Arial', sans-serif;
+                font-size: 10px;
+                font-weight: bold;
+            """)
+            v_layout.addWidget(name_label)
+            
+            temp_label = QLabel("--°C")
+            temp_label.setAlignment(Qt.AlignCenter)
+            temp_label.setStyleSheet("""
+                color: #ffffff;
+                font-family: 'Arial', sans-serif;
+                font-size: 16px;
+                font-weight: bold;
+            """)
+            v_layout.addWidget(temp_label)
+            
+            self.tire_labels[name] = temp_label
+            grid.addWidget(container, row, col)
         
-        layout.addLayout(values_layout)
+        layout.addLayout(grid)
+    
+    def set_temps(self, fl: float, fr: float, rl: float, rr: float):
+        """Update tire temperatures."""
+        temps = {
+            "AVG": fl,
+            "AVD": fr,
+            "ARG": rl,
+            "ARD": rr
+        }
         
-        # Max G indicator
-        self.max_label = QLabel("Max: 0.00g")
-        self.max_label.setAlignment(Qt.AlignCenter)
-        self.max_label.setStyleSheet("color: #888; font-size: 10px;")
-        layout.addWidget(self.max_label)
+        for name, temp in temps.items():
+            if temp > 0:
+                self.tire_labels[name].setText(f"{int(temp)}°C")
+                
+                # Color based on temp
+                if temp < 60:
+                    color = "#0088ff"  # Cold - blue
+                elif temp < 80:
+                    color = "#00ff00"  # Optimal - green
+                elif temp < 100:
+                    color = "#ff8800"  # Hot - orange
+                else:
+                    color = "#ff0000"  # Overheating - red
+                
+                self.tire_labels[name].setStyleSheet(f"""
+                    color: {color};
+                    font-family: 'Arial', sans-serif;
+                    font-size: 16px;
+                    font-weight: bold;
+                """)
+            else:
+                self.tire_labels[name].setText("--°C")
+
+
+class GForcesWidget(QFrame):
+    """G-Forces display with Initial D styling."""
+    
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setFrameStyle(QFrame.NoFrame)
+        self.setStyleSheet("""
+            QFrame {
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                    stop:0 #1a0000, stop:1 #000000);
+                border: 2px solid #ff0000;
+                border-radius: 12px;
+                padding: 10px;
+            }
+        """)
+        
+        layout = QVBoxLayout(self)
+        layout.setSpacing(8)
+        layout.setContentsMargins(15, 12, 15, 12)
+        
+        # Title
+        title = QLabel("⚡ G-Forces")
+        title.setAlignment(Qt.AlignCenter)
+        title.setStyleSheet("""
+            color: #ff0000;
+            font-family: 'Arial', sans-serif;
+            font-size: 13px;
+            font-weight: bold;
+            letter-spacing: 1px;
+        """)
+        layout.addWidget(title)
+        
+        # Lateral G
+        lat_container = QHBoxLayout()
+        lat_label = QLabel("Lat:")
+        lat_label.setStyleSheet("color: #888; font-size: 11px;")
+        self.lat_value = QLabel("0.0 g")
+        self.lat_value.setStyleSheet("""
+            color: #ffffff;
+            font-family: 'Arial', sans-serif;
+            font-size: 16px;
+            font-weight: bold;
+        """)
+        lat_container.addWidget(lat_label)
+        lat_container.addWidget(self.lat_value)
+        lat_container.addStretch()
+        layout.addLayout(lat_container)
+        
+        # Longitudinal G
+        lon_container = QHBoxLayout()
+        lon_label = QLabel("Lon:")
+        lon_label.setStyleSheet("color: #888; font-size: 11px;")
+        self.lon_value = QLabel("0.0 g")
+        self.lon_value.setStyleSheet("""
+            color: #ffffff;
+            font-family: 'Arial', sans-serif;
+            font-size: 16px;
+            font-weight: bold;
+        """)
+        lon_container.addWidget(lon_label)
+        lon_container.addWidget(self.lon_value)
+        lon_container.addStretch()
+        layout.addLayout(lon_container)
+        
+        # Max G
+        max_container = QHBoxLayout()
+        max_label = QLabel("Max:")
+        max_label.setStyleSheet("color: #888; font-size: 11px;")
+        self.max_value = QLabel("0.0 g")
+        self.max_value.setStyleSheet("""
+            color: #ff0000;
+            font-family: 'Arial', sans-serif;
+            font-size: 16px;
+            font-weight: bold;
+        """)
+        max_container.addWidget(max_label)
+        max_container.addWidget(self.max_value)
+        max_container.addStretch()
+        layout.addLayout(max_container)
         
         self.max_g = 0.0
-        self.setMinimumSize(150, 80)
     
     def set_g_forces(self, lateral: float, longitudinal: float):
-        """Update G-force display."""
-        self.g_lat = lateral
-        self.g_lon = longitudinal
+        """Update G-forces."""
+        self.lat_value.setText(f"{lateral:.2f} g")
+        self.lon_value.setText(f"{longitudinal:.2f} g")
         
-        self.lat_label.setText(f"Lat: {abs(lateral):.2f}g")
-        self.lon_label.setText(f"Lon: {abs(longitudinal):.2f}g")
-        
-        # Track max G
+        # Calculate total G
         total_g = (lateral**2 + longitudinal**2)**0.5
         if total_g > self.max_g:
             self.max_g = total_g
-            self.max_label.setText(f"Max: {self.max_g:.2f}g")
+        
+        self.max_value.setText(f"{self.max_g:.2f} g")
 
 
-class PedalWidget(QFrame):
-    """Throttle and brake pedal display."""
+class PedalsWidget(QFrame):
+    """Pedals display with Initial D styling."""
     
     def __init__(self, parent=None):
         super().__init__(parent)
-        
-        self.setFrameStyle(QFrame.StyledPanel | QFrame.Raised)
+        self.setFrameStyle(QFrame.NoFrame)
         self.setStyleSheet("""
-            PedalWidget {
-                background-color: #1a1a2e;
-                border: 2px solid #16213e;
-                border-radius: 10px;
+            QFrame {
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                    stop:0 #1a0000, stop:1 #000000);
+                border: 2px solid #ff0000;
+                border-radius: 12px;
+                padding: 10px;
             }
         """)
         
         layout = QVBoxLayout(self)
-        layout.setSpacing(5)
-        layout.setContentsMargins(10, 10, 10, 10)
+        layout.setSpacing(10)
+        layout.setContentsMargins(15, 12, 15, 12)
         
         # Title
-        title = QLabel("🎮 Pédales")
+        title = QLabel("🚗 Pédales")
         title.setAlignment(Qt.AlignCenter)
-        title.setStyleSheet("color: #aaa; font-size: 12px; font-weight: bold;")
+        title.setStyleSheet("""
+            color: #ff0000;
+            font-family: 'Arial', sans-serif;
+            font-size: 13px;
+            font-weight: bold;
+            letter-spacing: 1px;
+        """)
         layout.addWidget(title)
         
         # Throttle
-        throttle_layout = QHBoxLayout()
+        throttle_layout = QVBoxLayout()
         throttle_label = QLabel("Gaz")
-        throttle_label.setStyleSheet("color: #44ff44; font-size: 10px;")
-        throttle_label.setFixedWidth(35)
+        throttle_label.setStyleSheet("color: #888; font-size: 11px;")
+        throttle_layout.addWidget(throttle_label)
+        
         self.throttle_bar = QProgressBar()
         self.throttle_bar.setRange(0, 100)
+        self.throttle_bar.setValue(0)
         self.throttle_bar.setTextVisible(False)
-        self.throttle_bar.setFixedHeight(12)
         self.throttle_bar.setStyleSheet("""
             QProgressBar {
-                background-color: #2a2a4e;
-                border-radius: 3px;
+                border: 1px solid #ff0000;
+                border-radius: 4px;
+                background-color: rgba(0, 0, 0, 0.5);
+                height: 20px;
             }
             QProgressBar::chunk {
-                background-color: #44ff44;
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+                    stop:0 #00ff00, stop:1 #88ff00);
                 border-radius: 3px;
             }
         """)
-        throttle_layout.addWidget(throttle_label)
         throttle_layout.addWidget(self.throttle_bar)
         layout.addLayout(throttle_layout)
         
         # Brake
-        brake_layout = QHBoxLayout()
+        brake_layout = QVBoxLayout()
         brake_label = QLabel("Frein")
-        brake_label.setStyleSheet("color: #ff4444; font-size: 10px;")
-        brake_label.setFixedWidth(35)
+        brake_label.setStyleSheet("color: #888; font-size: 11px;")
+        brake_layout.addWidget(brake_label)
+        
         self.brake_bar = QProgressBar()
         self.brake_bar.setRange(0, 100)
+        self.brake_bar.setValue(0)
         self.brake_bar.setTextVisible(False)
-        self.brake_bar.setFixedHeight(12)
         self.brake_bar.setStyleSheet("""
             QProgressBar {
-                background-color: #2a2a4e;
-                border-radius: 3px;
+                border: 1px solid #ff0000;
+                border-radius: 4px;
+                background-color: rgba(0, 0, 0, 0.5);
+                height: 20px;
             }
             QProgressBar::chunk {
-                background-color: #ff4444;
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+                    stop:0 #ff0000, stop:1 #ff8800);
                 border-radius: 3px;
             }
         """)
-        brake_layout.addWidget(brake_label)
         brake_layout.addWidget(self.brake_bar)
         layout.addLayout(brake_layout)
-        
-        self.setMinimumSize(150, 80)
     
     def set_pedals(self, throttle: float, brake: float):
-        """Update pedal display (0-1 range)."""
+        """Update pedal positions (0.0 to 1.0)."""
         self.throttle_bar.setValue(int(throttle * 100))
         self.brake_bar.setValue(int(brake * 100))
 
 
-class TelemetryPanel(QFrame):
-    """
-    Main telemetry panel - clean, ergonomic display of live AC data.
-    """
+class TelemetryPanel(QWidget):
+    """Main telemetry panel with modern Initial D design."""
     
     def __init__(self, parent=None):
         super().__init__(parent)
-        
-        self.setFrameStyle(QFrame.StyledPanel | QFrame.Raised)
-        self.setStyleSheet("""
-            TelemetryPanel {
-                background-color: #0f0f1a;
-                border: 1px solid #16213e;
-                border-radius: 12px;
-            }
-        """)
-        
         self._setup_ui()
-        self._telemetry = TelemetryData()
+        
+        # Update timer
+        self.update_timer = QTimer(self)
+        self.update_timer.timeout.connect(self._request_update)
+        self.update_timer.start(100)  # 10 Hz
+        
+        self.telemetry_callback = None
     
     def _setup_ui(self):
-        """Setup the telemetry UI."""
+        """Set up the UI."""
         layout = QVBoxLayout(self)
-        layout.setSpacing(10)
         layout.setContentsMargins(15, 15, 15, 15)
+        layout.setSpacing(15)
         
-        # Header
-        header = QLabel("📡 Télémétrie Live")
-        header.setStyleSheet("""
-            font-size: 16px;
+        # Title
+        title = QLabel("📊 Télémétrie Live")
+        title.setStyleSheet("""
+            color: #ff0000;
+            font-family: 'Arial', sans-serif;
+            font-size: 22px;
             font-weight: bold;
-            color: #fff;
-            padding: 5px;
+            letter-spacing: 2px;
         """)
-        layout.addWidget(header)
+        layout.addWidget(title)
         
         # Connection status
-        self.status_label = QLabel("⚫ Non connecté")
-        self.status_label.setStyleSheet("color: #888; font-size: 11px;")
+        self.status_label = QLabel("● Connecté à AC")
+        self.status_label.setStyleSheet("""
+            color: #00ff00;
+            font-family: 'Arial', sans-serif;
+            font-size: 12px;
+        """)
         layout.addWidget(self.status_label)
         
         # Main gauges row
-        gauges_layout = QHBoxLayout()
-        gauges_layout.setSpacing(10)
+        gauges_row = QHBoxLayout()
+        gauges_row.setSpacing(15)
         
-        self.speed_gauge = GaugeWidget("Vitesse", "km/h", max_value=300)
-        self.rpm_gauge = GaugeWidget("RPM", "tr/min", max_value=9000)
-        self.gear_gauge = GaugeWidget("Rapport", "", max_value=7)
+        self.speed_gauge = ModernGaugeWidget("Vitesse", "km/h", 400)
+        self.rpm_gauge = ModernGaugeWidget("RPM", "tr/min", 8000)
+        self.gear_gauge = ModernGaugeWidget("Rapport", "", 6)
         
-        gauges_layout.addWidget(self.speed_gauge)
-        gauges_layout.addWidget(self.rpm_gauge)
-        gauges_layout.addWidget(self.gear_gauge)
+        gauges_row.addWidget(self.speed_gauge)
+        gauges_row.addWidget(self.rpm_gauge)
+        gauges_row.addWidget(self.gear_gauge)
         
-        layout.addLayout(gauges_layout)
+        layout.addLayout(gauges_row)
         
-        # Second row: Tires, G-Force, Pedals
-        info_layout = QHBoxLayout()
-        info_layout.setSpacing(10)
+        # Second row
+        second_row = QHBoxLayout()
+        second_row.setSpacing(15)
         
-        self.tire_widget = TireTempsWidget()
-        self.gforce_widget = GForceWidget()
-        self.pedal_widget = PedalWidget()
+        self.tire_temps = TireTempsWidget()
+        self.g_forces = GForcesWidget()
+        self.pedals = PedalsWidget()
         
-        info_layout.addWidget(self.tire_widget)
-        info_layout.addWidget(self.gforce_widget)
-        info_layout.addWidget(self.pedal_widget)
+        second_row.addWidget(self.tire_temps)
+        second_row.addWidget(self.g_forces)
+        second_row.addWidget(self.pedals)
         
-        layout.addLayout(info_layout)
+        layout.addLayout(second_row)
         
         layout.addStretch()
     
+    def set_telemetry_callback(self, callback):
+        """Set callback to get telemetry data."""
+        self.telemetry_callback = callback
+    
+    def _request_update(self):
+        """Request telemetry update."""
+        if self.telemetry_callback:
+            data = self.telemetry_callback()
+            if data:
+                self.update_telemetry(data)
+    
     def update_telemetry(self, data: TelemetryData):
         """Update all telemetry displays."""
-        self._telemetry = data
-        
-        # Update connection status
+        # Update status
         if data.is_connected:
-            self.status_label.setText("🟢 Connecté à AC")
-            self.status_label.setStyleSheet("color: #44ff44; font-size: 11px;")
+            self.status_label.setText("● Connecté à AC")
+            self.status_label.setStyleSheet("""
+                color: #00ff00;
+                font-family: 'Arial', sans-serif;
+                font-size: 12px;
+            """)
         else:
-            self.status_label.setText("⚫ Non connecté")
-            self.status_label.setStyleSheet("color: #888; font-size: 11px;")
+            self.status_label.setText("● Déconnecté")
+            self.status_label.setStyleSheet("""
+                color: #ff0000;
+                font-family: 'Arial', sans-serif;
+                font-size: 12px;
+            """)
         
         # Update gauges
         self.speed_gauge.set_value(data.speed_kmh)
-        self.rpm_gauge.max_value = data.max_rpm if data.max_rpm > 0 else 8000
         self.rpm_gauge.set_value(data.rpm)
-        
-        # Gear display
-        gear_text = "N" if data.gear == 0 else ("R" if data.gear < 0 else str(data.gear))
-        self.gear_gauge.value_label.setText(gear_text)
-        self.gear_gauge.value_label.setStyleSheet("color: #fff; font-size: 24px; font-weight: bold;")
+        self.rpm_gauge.max_value = data.max_rpm
+        self.gear_gauge.set_value(data.gear)
         
         # Update tire temps
-        self.tire_widget.set_temps(
-            data.tire_temp_fl, data.tire_temp_fr,
-            data.tire_temp_rl, data.tire_temp_rr
+        self.tire_temps.set_temps(
+            data.tire_temp_fl,
+            data.tire_temp_fr,
+            data.tire_temp_rl,
+            data.tire_temp_rr
         )
         
         # Update G-forces
-        self.gforce_widget.set_g_forces(data.g_lateral, data.g_longitudinal)
+        self.g_forces.set_g_forces(data.g_lateral, data.g_longitudinal)
         
         # Update pedals
-        self.pedal_widget.set_pedals(data.throttle, data.brake)
-    
-    def get_telemetry(self) -> TelemetryData:
-        """Get current telemetry data."""
-        return self._telemetry
+        self.pedals.set_pedals(data.throttle, data.brake)

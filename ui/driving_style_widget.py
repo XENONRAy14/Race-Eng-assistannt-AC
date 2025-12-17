@@ -1,6 +1,6 @@
 """
 Driving Style Widget - Displays detected driving style and recommendations.
-Clean, simple interface showing analysis results.
+Modern Initial D black/red gradient design.
 """
 
 from PySide6.QtWidgets import (
@@ -13,31 +13,34 @@ from ai.driving_analyzer import DrivingMetrics, DrivingStyle
 
 
 class StyleBadge(QFrame):
-    """Badge showing detected driving style."""
+    """Badge showing detected driving style with Initial D styling."""
     
     def __init__(self, parent=None):
         super().__init__(parent)
         
-        self.setFrameStyle(QFrame.StyledPanel)
+        self.setFrameStyle(QFrame.NoFrame)
         self.setStyleSheet("""
-            StyleBadge {
-                background-color: #1a1a2e;
-                border: 2px solid #16213e;
-                border-radius: 10px;
+            QFrame {
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                    stop:0 #1a0000, stop:1 #000000);
+                border: 2px solid #ff0000;
+                border-radius: 12px;
+                padding: 15px;
             }
         """)
         
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(15, 10, 15, 10)
-        layout.setSpacing(5)
+        layout.setContentsMargins(20, 15, 20, 15)
+        layout.setSpacing(8)
         
         # Style icon and name
         self.style_label = QLabel("❓ Analyse en cours...")
         self.style_label.setAlignment(Qt.AlignCenter)
         self.style_label.setStyleSheet("""
-            font-size: 18px;
+            font-size: 20px;
             font-weight: bold;
             color: #888;
+            font-family: 'Arial', sans-serif;
         """)
         layout.addWidget(self.style_label)
         
@@ -46,257 +49,257 @@ class StyleBadge(QFrame):
         self.confidence_bar.setRange(0, 100)
         self.confidence_bar.setValue(0)
         self.confidence_bar.setTextVisible(False)
-        self.confidence_bar.setFixedHeight(6)
+        self.confidence_bar.setFixedHeight(8)
         self.confidence_bar.setStyleSheet("""
             QProgressBar {
-                background-color: #2a2a4e;
-                border-radius: 3px;
+                background-color: rgba(0, 0, 0, 0.5);
+                border: 1px solid #ff0000;
+                border-radius: 4px;
             }
             QProgressBar::chunk {
-                background-color: #4a69bd;
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+                    stop:0 #ff0000, stop:1 #ff8800);
                 border-radius: 3px;
             }
         """)
         layout.addWidget(self.confidence_bar)
         
-        self.setMinimumHeight(70)
+        self.setMinimumHeight(90)
     
     def set_style(self, style: DrivingStyle, confidence: float):
         """Update the displayed style."""
         style_info = {
             DrivingStyle.UNKNOWN: ("❓", "Analyse...", "#888888"),
-            DrivingStyle.SMOOTH: ("🎯", "Fluide", "#4CAF50"),
-            DrivingStyle.BALANCED: ("⚖️", "Équilibré", "#2196F3"),
-            DrivingStyle.AGGRESSIVE: ("🔥", "Agressif", "#FF9800"),
-            DrivingStyle.DRIFT: ("💨", "Drift", "#E91E63")
+            DrivingStyle.SMOOTH: ("🎯", "Fluide", "#00ff00"),
+            DrivingStyle.BALANCED: ("⚖️", "Équilibré", "#ffffff"),
+            DrivingStyle.AGGRESSIVE: ("🔥", "Agressif", "#ff8800"),
+            DrivingStyle.DRIFT: ("💨", "Drift", "#ff0000")
         }
         
         icon, name, color = style_info.get(style, ("❓", "?", "#888"))
         
         self.style_label.setText(f"{icon} {name}")
         self.style_label.setStyleSheet(f"""
-            font-size: 18px;
+            font-size: 20px;
             font-weight: bold;
             color: {color};
+            font-family: 'Arial', sans-serif;
         """)
         
         self.confidence_bar.setValue(int(confidence * 100))
-        self.confidence_bar.setStyleSheet(f"""
-            QProgressBar {{
-                background-color: #2a2a4e;
-                border-radius: 3px;
-            }}
-            QProgressBar::chunk {{
-                background-color: {color};
-                border-radius: 3px;
-            }}
-        """)
-        
-        self.setStyleSheet(f"""
-            StyleBadge {{
-                background-color: #1a1a2e;
-                border: 2px solid {color}44;
-                border-radius: 10px;
-            }}
-        """)
 
 
 class MetricBar(QFrame):
-    """A single metric display bar."""
+    """Bar showing a single metric with Initial D styling."""
     
-    def __init__(self, name: str, color: str = "#4a69bd", parent=None):
+    def __init__(self, label: str, parent=None):
         super().__init__(parent)
+        self.label_text = label
         
-        self.color = color
+        self.setFrameStyle(QFrame.NoFrame)
         
         layout = QHBoxLayout(self)
-        layout.setContentsMargins(0, 2, 0, 2)
-        layout.setSpacing(8)
+        layout.setContentsMargins(0, 5, 0, 5)
+        layout.setSpacing(10)
         
-        # Name
-        self.name_label = QLabel(name)
-        self.name_label.setFixedWidth(80)
-        self.name_label.setStyleSheet("color: #aaa; font-size: 11px;")
-        layout.addWidget(self.name_label)
+        # Label
+        self.label = QLabel(label)
+        self.label.setFixedWidth(100)
+        self.label.setStyleSheet("""
+            color: #888;
+            font-family: 'Arial', sans-serif;
+            font-size: 12px;
+        """)
+        layout.addWidget(self.label)
         
-        # Bar
+        # Progress bar
         self.bar = QProgressBar()
         self.bar.setRange(0, 100)
-        self.bar.setValue(50)
+        self.bar.setValue(0)
         self.bar.setTextVisible(False)
-        self.bar.setFixedHeight(8)
-        self.bar.setStyleSheet(f"""
-            QProgressBar {{
-                background-color: #2a2a4e;
+        self.bar.setFixedHeight(24)
+        self.bar.setStyleSheet("""
+            QProgressBar {
+                background-color: rgba(0, 0, 0, 0.5);
+                border: 1px solid #ff0000;
                 border-radius: 4px;
-            }}
-            QProgressBar::chunk {{
-                background-color: {color};
-                border-radius: 4px;
-            }}
+            }
+            QProgressBar::chunk {
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+                    stop:0 #ff0000, stop:1 #ff8800);
+                border-radius: 3px;
+            }
         """)
         layout.addWidget(self.bar)
         
-        # Value
-        self.value_label = QLabel("50%")
-        self.value_label.setFixedWidth(35)
-        self.value_label.setAlignment(Qt.AlignRight)
-        self.value_label.setStyleSheet(f"color: {color}; font-size: 11px;")
+        # Value label
+        self.value_label = QLabel("0%")
+        self.value_label.setFixedWidth(50)
+        self.value_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
+        self.value_label.setStyleSheet("""
+            color: #ffffff;
+            font-family: 'Arial', sans-serif;
+            font-size: 13px;
+            font-weight: bold;
+        """)
         layout.addWidget(self.value_label)
     
     def set_value(self, value: float):
-        """Set value (0-1 range)."""
-        pct = int(value * 100)
-        self.bar.setValue(pct)
-        self.value_label.setText(f"{pct}%")
+        """Set the metric value (0.0 to 1.0)."""
+        percent = int(value * 100)
+        self.bar.setValue(percent)
+        self.value_label.setText(f"{percent}%")
 
 
-class DrivingStyleWidget(QFrame):
-    """
-    Widget displaying driving style analysis.
-    Shows detected style, metrics, and recommendations.
-    """
+class DrivingStyleWidget(QWidget):
+    """Main driving style analysis widget with Initial D design."""
     
-    apply_recommendation = Signal(str)  # Emits recommended behavior
+    apply_recommendation = Signal()
     
     def __init__(self, parent=None):
         super().__init__(parent)
-        
-        self.setFrameStyle(QFrame.StyledPanel | QFrame.Raised)
-        self.setStyleSheet("""
-            DrivingStyleWidget {
-                background-color: #0f0f1a;
-                border: 1px solid #16213e;
-                border-radius: 12px;
-            }
-        """)
-        
         self._setup_ui()
     
     def _setup_ui(self):
-        """Setup the widget UI."""
+        """Set up the UI."""
         layout = QVBoxLayout(self)
-        layout.setSpacing(12)
         layout.setContentsMargins(15, 15, 15, 15)
+        layout.setSpacing(15)
         
-        # Header
-        header = QLabel("🧠 Analyse de Conduite")
-        header.setStyleSheet("""
-            font-size: 16px;
+        # Title
+        title = QLabel("🎯 Analyse de Conduite")
+        title.setStyleSheet("""
+            color: #ff0000;
+            font-family: 'Arial', sans-serif;
+            font-size: 22px;
             font-weight: bold;
-            color: #fff;
+            letter-spacing: 2px;
         """)
-        layout.addWidget(header)
+        layout.addWidget(title)
         
         # Style badge
         self.style_badge = StyleBadge()
         layout.addWidget(self.style_badge)
         
-        # Metrics section
-        metrics_label = QLabel("Métriques")
-        metrics_label.setStyleSheet("color: #888; font-size: 11px; margin-top: 5px;")
-        layout.addWidget(metrics_label)
+        # Metrics group
+        metrics_group = QFrame()
+        metrics_group.setFrameStyle(QFrame.NoFrame)
+        metrics_group.setStyleSheet("""
+            QFrame {
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                    stop:0 #0a0000, stop:1 #000000);
+                border: 2px solid #ff0000;
+                border-radius: 12px;
+                padding: 15px;
+            }
+        """)
+        
+        metrics_layout = QVBoxLayout(metrics_group)
+        metrics_layout.setSpacing(8)
+        
+        # Metrics title
+        metrics_title = QLabel("Métriques")
+        metrics_title.setStyleSheet("""
+            color: #ff0000;
+            font-family: 'Arial', sans-serif;
+            font-size: 14px;
+            font-weight: bold;
+            letter-spacing: 1px;
+        """)
+        metrics_layout.addWidget(metrics_title)
         
         # Metric bars
-        self.aggression_bar = MetricBar("Agressivité", "#FF9800")
-        self.smoothness_bar = MetricBar("Fluidité", "#4CAF50")
-        self.drift_bar = MetricBar("Drift", "#E91E63")
+        self.aggression_bar = MetricBar("Agressivité")
+        self.smoothness_bar = MetricBar("Fluidité")
+        self.drift_bar = MetricBar("Drift")
         
-        layout.addWidget(self.aggression_bar)
-        layout.addWidget(self.smoothness_bar)
-        layout.addWidget(self.drift_bar)
+        metrics_layout.addWidget(self.aggression_bar)
+        metrics_layout.addWidget(self.smoothness_bar)
+        metrics_layout.addWidget(self.drift_bar)
         
-        # Recommendation
-        self.recommendation_label = QLabel("Continue à rouler pour l'analyse...")
-        self.recommendation_label.setWordWrap(True)
-        self.recommendation_label.setStyleSheet("""
-            color: #aaa;
-            font-size: 11px;
-            padding: 10px;
-            background-color: #1a1a2e;
-            border-radius: 6px;
-            margin-top: 5px;
+        layout.addWidget(metrics_group)
+        
+        # Recommendation section
+        rec_group = QFrame()
+        rec_group.setFrameStyle(QFrame.NoFrame)
+        rec_group.setStyleSheet("""
+            QFrame {
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                    stop:0 #0a0000, stop:1 #000000);
+                border: 2px solid #ff0000;
+                border-radius: 12px;
+                padding: 15px;
+            }
         """)
-        layout.addWidget(self.recommendation_label)
+        
+        rec_layout = QVBoxLayout(rec_group)
+        rec_layout.setSpacing(10)
+        
+        # Recommendation icon and text
+        self.rec_icon = QLabel("💡")
+        self.rec_icon.setAlignment(Qt.AlignCenter)
+        self.rec_icon.setStyleSheet("font-size: 32px;")
+        rec_layout.addWidget(self.rec_icon)
+        
+        self.rec_label = QLabel("Style fluide détecté!")
+        self.rec_label.setAlignment(Qt.AlignCenter)
+        self.rec_label.setWordWrap(True)
+        self.rec_label.setStyleSheet("""
+            color: #ffffff;
+            font-family: 'Arial', sans-serif;
+            font-size: 14px;
+        """)
+        rec_layout.addWidget(self.rec_label)
+        
+        self.rec_detail = QLabel("Je recommande le mode 'Safe' ou 'Balanced' pour maximiser ton grip et ta constance.")
+        self.rec_detail.setAlignment(Qt.AlignCenter)
+        self.rec_detail.setWordWrap(True)
+        self.rec_detail.setStyleSheet("""
+            color: #888;
+            font-family: 'Arial', sans-serif;
+            font-size: 12px;
+        """)
+        rec_layout.addWidget(self.rec_detail)
         
         # Apply button
-        self.apply_btn = QPushButton("✨ Appliquer la recommandation")
-        self.apply_btn.setStyleSheet("""
-            QPushButton {
-                background-color: #4a69bd;
-                color: white;
-                border: none;
-                border-radius: 6px;
-                padding: 10px;
-                font-weight: bold;
-                font-size: 12px;
-            }
-            QPushButton:hover {
-                background-color: #6a89dd;
-            }
-            QPushButton:pressed {
-                background-color: #3a59ad;
-            }
-            QPushButton:disabled {
-                background-color: #333;
-                color: #666;
-            }
-        """)
-        self.apply_btn.setEnabled(False)
-        self.apply_btn.clicked.connect(self._on_apply_clicked)
-        layout.addWidget(self.apply_btn)
+        self.apply_button = QPushButton("⚡ Appliquer la recommandation")
+        self.apply_button.clicked.connect(self.apply_recommendation.emit)
+        self.apply_button.setMinimumHeight(45)
+        rec_layout.addWidget(self.apply_button)
         
+        layout.addWidget(rec_group)
         layout.addStretch()
-        
-        self._current_style = DrivingStyle.UNKNOWN
     
-    def update_metrics(self, metrics: DrivingMetrics):
-        """Update display with new metrics."""
+    def update_analysis(self, metrics: DrivingMetrics, style: DrivingStyle, confidence: float):
+        """Update the analysis display."""
         # Update style badge
-        self.style_badge.set_style(metrics.style, metrics.confidence)
+        self.style_badge.set_style(style, confidence)
         
         # Update metric bars
-        self.aggression_bar.set_value(metrics.aggression_score)
-        self.smoothness_bar.set_value(metrics.smoothness_score)
-        self.drift_bar.set_value(metrics.drift_score)
+        self.aggression_bar.set_value(metrics.aggression)
+        self.smoothness_bar.set_value(metrics.smoothness)
+        self.drift_bar.set_value(metrics.drift_tendency)
         
         # Update recommendation
-        recommendation = self._get_recommendation(metrics.style)
-        self.recommendation_label.setText(recommendation)
-        
-        # Enable apply button if we have a clear style
-        self._current_style = metrics.style
-        self.apply_btn.setEnabled(metrics.style != DrivingStyle.UNKNOWN)
-    
-    def _get_recommendation(self, style: DrivingStyle) -> str:
-        """Get recommendation text for style."""
         recommendations = {
-            DrivingStyle.UNKNOWN: "🔄 Continue à rouler pour que j'analyse ton style de conduite...",
-            DrivingStyle.SMOOTH: "🎯 Style fluide détecté!\n\nJe recommande le mode 'Safe' ou 'Balanced' pour maximiser ton grip et ta constance.",
-            DrivingStyle.BALANCED: "⚖️ Style équilibré détecté!\n\nLe mode 'Balanced' est parfait pour toi - bon compromis grip/réactivité.",
-            DrivingStyle.AGGRESSIVE: "🔥 Style agressif détecté!\n\nLe mode 'Attack' avec suspension ferme te donnera la réactivité que tu cherches.",
-            DrivingStyle.DRIFT: "💨 Style drift détecté!\n\nLe mode 'Drift' avec diff serré et arrière glissant est fait pour toi!"
-        }
-        return recommendations.get(style, "")
-    
-    def _on_apply_clicked(self):
-        """Apply the recommended behavior."""
-        style_to_behavior = {
-            DrivingStyle.SMOOTH: "safe",
-            DrivingStyle.BALANCED: "balanced",
-            DrivingStyle.AGGRESSIVE: "attack",
-            DrivingStyle.DRIFT: "drift"
+            DrivingStyle.SMOOTH: (
+                "🎯 Style fluide détecté!",
+                "Je recommande le mode 'Safe' ou 'Balanced' pour maximiser ton grip et ta constance."
+            ),
+            DrivingStyle.BALANCED: (
+                "⚖️ Style équilibré détecté!",
+                "Le mode 'Balanced' est parfait pour toi. Tu peux aussi essayer 'Attack' pour plus de performance."
+            ),
+            DrivingStyle.AGGRESSIVE: (
+                "🔥 Style agressif détecté!",
+                "Le mode 'Attack' est fait pour toi! Attention à ne pas trop abîmer les pneus."
+            ),
+            DrivingStyle.DRIFT: (
+                "💨 Style drift détecté!",
+                "Le mode 'Drift' est optimal pour ton style. Profite des glissades contrôlées!"
+            )
         }
         
-        behavior = style_to_behavior.get(self._current_style, "balanced")
-        self.apply_recommendation.emit(behavior)
-    
-    def reset(self):
-        """Reset the display."""
-        self.style_badge.set_style(DrivingStyle.UNKNOWN, 0.0)
-        self.aggression_bar.set_value(0.5)
-        self.smoothness_bar.set_value(0.5)
-        self.drift_bar.set_value(0.0)
-        self.recommendation_label.setText("🔄 Continue à rouler pour l'analyse...")
-        self.apply_btn.setEnabled(False)
-        self._current_style = DrivingStyle.UNKNOWN
+        label, detail = recommendations.get(style, ("❓", "Analyse en cours..."))
+        self.rec_label.setText(label)
+        self.rec_detail.setText(detail)
