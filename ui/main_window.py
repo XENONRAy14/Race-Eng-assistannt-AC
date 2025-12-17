@@ -22,6 +22,7 @@ from ui.sliders_panel import SlidersPanel
 from ui.telemetry_panel import TelemetryPanel, TelemetryData
 from ui.presets_panel import PresetsPanel
 from ui.driving_style_widget import DrivingStyleWidget
+from ui.track_map_widget import TrackMapWidget
 
 from models.driver_profile import DriverProfile
 from models.setup import Setup
@@ -72,6 +73,8 @@ class MainWindow(QMainWindow):
         self._last_detected_track: str = ""
         self._cars_cache: list[Car] = []
         self._tracks_cache: list[Track] = []
+        self._last_sector_index: int = -1
+        self._track_map_initialized: bool = False
         
         # UI setup
         self._setup_window()
@@ -409,12 +412,16 @@ class MainWindow(QMainWindow):
         self.telemetry_panel = TelemetryPanel()
         self.right_tabs.addTab(self.telemetry_panel, "📡 Télémétrie")
         
-        # Tab 3: Driving Analysis
+        # Tab 3: Track Map with sector times
+        self.track_map_widget = TrackMapWidget()
+        self.right_tabs.addTab(self.track_map_widget, "🗺️ Piste")
+        
+        # Tab 4: Driving Analysis
         self.driving_style_widget = DrivingStyleWidget()
         self.driving_style_widget.apply_recommendation.connect(self._on_apply_style_recommendation)
         self.right_tabs.addTab(self.driving_style_widget, "🧠 Analyse")
         
-        # Tab 4: Presets
+        # Tab 5: Presets
         self.presets_panel = PresetsPanel()
         self.presets_panel.preset_loaded.connect(self._on_preset_loaded)
         self.right_tabs.addTab(self.presets_panel, "⭐ Presets")
@@ -965,6 +972,9 @@ class MainWindow(QMainWindow):
                 # Game is running (live, paused, or replay)
                 self._update_game_status(live_data)
                 
+                # Update track map widget
+                self._update_track_map(live_data)
+                
                 # Check for car/track change
                 if live_data.car_model and live_data.track:
                     if (live_data.car_model != self._last_detected_car or 
@@ -972,6 +982,10 @@ class MainWindow(QMainWindow):
                         
                         self._last_detected_car = live_data.car_model
                         self._last_detected_track = live_data.track
+                        
+                        # Reset track map for new track
+                        self._track_map_initialized = False
+                        self._last_sector_index = -1
                         
                         # Auto-select in UI
                         self._auto_select_car_track(
@@ -1014,6 +1028,48 @@ class MainWindow(QMainWindow):
             self.game_status_label.setStyleSheet("color: #2196F3;")
         
         self.game_status_label.setText(status_text)
+    
+    def _update_track_map(self, live_data) -> None:
+        """Update the track map widget with live data."""
+        # Initialize track map if needed
+        if not self._track_map_initialized and live_data.track:
+            self.track_map_widget.set_sector_count(live_data.sector_count)
+            track_name = live_data.track
+            if live_data.track_config:
+                track_name += f" ({live_data.track_config})"
+            self.track_map_widget.set_track_info(track_name, live_data.track_length)
+            self._track_map_initialized = True
+        
+        # Update car position
+        self.track_map_widget.update_car_position(live_data.normalized_car_position)
+        
+        # Update current sector
+        self.track_map_widget.update_current_sector(live_data.current_sector_index)
+        
+        # Check for sector change to record sector time
+        if live_data.current_sector_index != self._last_sector_index:
+            if self._last_sector_index >= 0 and live_data.last_sector_time_ms > 0:
+                # Record the completed sector time
+                self.track_map_widget.update_sector_time(
+                    self._last_sector_index,
+                    live_data.last_sector_time_ms
+                )
+            self._last_sector_index = live_data.current_sector_index
+        
+        # Update lap times
+        self.track_map_widget.update_lap_times(
+            live_data.current_lap_time,
+            live_data.last_lap_time,
+            live_data.best_lap_time,
+            live_data.completed_laps
+        )
+        
+        # Update delta (current vs best)
+        if live_data.best_lap_time_ms > 0 and live_data.current_lap_time_ms > 0:
+            # Simple delta calculation based on position
+            expected_time = int(live_data.normalized_car_position * live_data.best_lap_time_ms)
+            delta = live_data.current_lap_time_ms - expected_time
+            self.track_map_widget.update_delta(delta)
     
     def _auto_select_car_track(self, car_model: str, track: str, track_config: str) -> None:
         """Auto-select car and track in the UI based on live detection."""

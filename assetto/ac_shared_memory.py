@@ -225,6 +225,18 @@ class ACLiveData:
     best_lap_time: str = ""
     last_lap_time: str = ""
     
+    # Sector data
+    sector_count: int = 3
+    current_sector_index: int = 0
+    last_sector_time_ms: int = 0
+    normalized_car_position: float = 0.0
+    track_length: float = 0.0
+    
+    # Lap times in ms
+    current_lap_time_ms: int = 0
+    last_lap_time_ms: int = 0
+    best_lap_time_ms: int = 0
+    
     # Physics
     brake_bias: float = 0.0
     air_temp: float = 0.0
@@ -417,11 +429,23 @@ class ACSharedMemory:
             data.current_lap_time = graphics.currentTime.strip('\x00')
             data.best_lap_time = graphics.bestTime.strip('\x00')
             data.last_lap_time = graphics.lastTime.strip('\x00')
+            
+            # Sector data
+            data.current_sector_index = graphics.currentSectorIndex
+            data.last_sector_time_ms = graphics.lastSectorTime
+            data.normalized_car_position = graphics.normalizedCarPosition
+            
+            # Lap times in ms
+            data.current_lap_time_ms = graphics.iCurrentTime
+            data.last_lap_time_ms = graphics.iLastTime
+            data.best_lap_time_ms = graphics.iBestTime
         
-        # Read static info for max RPM
+        # Read static info for max RPM and sector count
         static = self.read_static()
         if static:
             data.max_rpm = static.maxRpm if static.maxRpm > 0 else 8000
+            data.sector_count = static.sectorCount if static.sectorCount > 0 else 3
+            data.track_length = static.trackSPlineLength
         
         # Read physics info (telemetry)
         physics = self.read_physics()
