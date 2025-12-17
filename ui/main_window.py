@@ -54,6 +54,9 @@ class MainWindow(QMainWindow):
         # Services
         self.repository = repository
         self.connector = ACConnector()
+        # Use the pre-configured detector from main.py if provided
+        if detector is not None:
+            self.connector.detector = detector
         self.setup_engine = SetupEngine()
         self.decision_engine = DecisionEngine(self.setup_engine)
         self.shared_memory = ACSharedMemory()
