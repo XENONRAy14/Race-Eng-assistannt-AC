@@ -21,50 +21,40 @@ class StyleBadge(QFrame):
         self.setFrameStyle(QFrame.NoFrame)
         self.setStyleSheet("""
             QFrame {
-                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                    stop:0 #1a0000, stop:1 #000000);
-                border: 2px solid #ff0000;
-                border-radius: 12px;
-                padding: 15px;
+                background: rgba(26, 0, 0, 0.3);
+                border: none;
+                border-radius: 8px;
+                padding: 20px;
             }
         """)
         
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(20, 15, 20, 15)
-        layout.setSpacing(8)
+        layout.setContentsMargins(20, 20, 20, 20)
+        layout.setSpacing(12)
         
         # Style icon and name
         self.style_label = QLabel("❓ Analyse en cours...")
         self.style_label.setAlignment(Qt.AlignCenter)
         self.style_label.setStyleSheet("""
-            font-size: 20px;
+            font-size: 32px;
             font-weight: bold;
-            color: #888;
+            color: #ffffff;
             font-family: 'Arial', sans-serif;
         """)
         layout.addWidget(self.style_label)
         
-        # Confidence bar
-        self.confidence_bar = QProgressBar()
-        self.confidence_bar.setRange(0, 100)
-        self.confidence_bar.setValue(0)
-        self.confidence_bar.setTextVisible(False)
-        self.confidence_bar.setFixedHeight(8)
-        self.confidence_bar.setStyleSheet("""
-            QProgressBar {
-                background-color: rgba(0, 0, 0, 0.5);
-                border: 1px solid #ff0000;
-                border-radius: 4px;
-            }
-            QProgressBar::chunk {
-                background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
-                    stop:0 #ff0000, stop:1 #ff8800);
-                border-radius: 3px;
-            }
+        # Confidence label
+        self.confidence_label = QLabel("Confiance: 0%")
+        self.confidence_label.setAlignment(Qt.AlignCenter)
+        self.confidence_label.setStyleSheet("""
+            font-size: 14px;
+            color: #888;
+            font-family: 'Arial', sans-serif;
+            margin-top: 5px;
         """)
-        layout.addWidget(self.confidence_bar)
+        layout.addWidget(self.confidence_label)
         
-        self.setMinimumHeight(90)
+        self.setMinimumHeight(120)
     
     def set_style(self, style: DrivingStyle, confidence: float):
         """Update the displayed style."""
@@ -80,13 +70,13 @@ class StyleBadge(QFrame):
         
         self.style_label.setText(f"{icon} {name}")
         self.style_label.setStyleSheet(f"""
-            font-size: 20px;
+            font-size: 32px;
             font-weight: bold;
             color: {color};
             font-family: 'Arial', sans-serif;
         """)
         
-        self.confidence_bar.setValue(int(confidence * 100))
+        self.confidence_label.setText(f"Confiance: {int(confidence * 100)}%")
 
 
 class MetricBar(QFrame):
@@ -118,16 +108,15 @@ class MetricBar(QFrame):
         self.bar.setRange(0, 100)
         self.bar.setValue(0)
         self.bar.setTextVisible(False)
-        self.bar.setFixedHeight(24)
+        self.bar.setFixedHeight(6)
         self.bar.setStyleSheet("""
             QProgressBar {
-                background-color: rgba(0, 0, 0, 0.5);
-                border: 1px solid #ff0000;
-                border-radius: 4px;
+                background-color: rgba(255, 255, 255, 0.1);
+                border: none;
+                border-radius: 3px;
             }
             QProgressBar::chunk {
-                background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
-                    stop:0 #ff0000, stop:1 #ff8800);
+                background: #ff0000;
                 border-radius: 3px;
             }
         """)
@@ -165,17 +154,18 @@ class DrivingStyleWidget(QWidget):
     def _setup_ui(self):
         """Set up the UI."""
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(15, 15, 15, 15)
-        layout.setSpacing(15)
+        layout.setContentsMargins(25, 25, 25, 25)
+        layout.setSpacing(25)
         
         # Title
         title = QLabel("🎯 Analyse de Conduite")
         title.setStyleSheet("""
             color: #ff0000;
             font-family: 'Arial', sans-serif;
-            font-size: 22px;
+            font-size: 24px;
             font-weight: bold;
-            letter-spacing: 2px;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
         """)
         layout.addWidget(title)
         
@@ -188,26 +178,23 @@ class DrivingStyleWidget(QWidget):
         metrics_group.setFrameStyle(QFrame.NoFrame)
         metrics_group.setStyleSheet("""
             QFrame {
-                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                    stop:0 #0a0000, stop:1 #000000);
-                border: 2px solid #ff0000;
-                border-radius: 12px;
-                padding: 15px;
+                background: transparent;
+                border: none;
             }
         """)
         
         metrics_layout = QVBoxLayout(metrics_group)
-        metrics_layout.setSpacing(8)
+        metrics_layout.setSpacing(15)
+        metrics_layout.setContentsMargins(0, 0, 0, 0)
         
         # Metrics title
-        metrics_title = QLabel("📊 Métriques de Conduite")
+        metrics_title = QLabel("📊 Métriques")
         metrics_title.setStyleSheet("""
-            color: #ff0000;
+            color: #ffffff;
             font-family: 'Arial', sans-serif;
-            font-size: 16px;
+            font-size: 18px;
             font-weight: bold;
-            letter-spacing: 1px;
-            margin-bottom: 5px;
+            margin-bottom: 10px;
         """)
         metrics_layout.addWidget(metrics_title)
         
@@ -227,21 +214,20 @@ class DrivingStyleWidget(QWidget):
         rec_group.setFrameStyle(QFrame.NoFrame)
         rec_group.setStyleSheet("""
             QFrame {
-                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                    stop:0 #0a0000, stop:1 #000000);
-                border: 2px solid #ff0000;
-                border-radius: 12px;
-                padding: 15px;
+                background: rgba(26, 0, 0, 0.3);
+                border: none;
+                border-radius: 8px;
+                padding: 25px;
             }
         """)
         
         rec_layout = QVBoxLayout(rec_group)
-        rec_layout.setSpacing(10)
+        rec_layout.setSpacing(15)
         
         # Recommendation icon and text
         self.rec_icon = QLabel("💡")
         self.rec_icon.setAlignment(Qt.AlignCenter)
-        self.rec_icon.setStyleSheet("font-size: 32px;")
+        self.rec_icon.setStyleSheet("font-size: 40px;")
         rec_layout.addWidget(self.rec_icon)
         
         self.rec_label = QLabel("Style fluide détecté!")
@@ -267,28 +253,25 @@ class DrivingStyleWidget(QWidget):
         rec_layout.addWidget(self.rec_detail)
         
         # Apply button
-        self.apply_button = QPushButton("⚡ Appliquer la recommandation")
+        self.apply_button = QPushButton("⚡ Appliquer")
         self.apply_button.clicked.connect(self._on_apply_clicked)
-        self.apply_button.setMinimumHeight(50)
+        self.apply_button.setMinimumHeight(55)
         self.apply_button.setStyleSheet("""
             QPushButton {
-                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                    stop:0 #ff0000, stop:1 #cc0000);
+                background: #ff0000;
                 color: #ffffff;
-                border: 2px solid #ff0000;
+                border: none;
                 border-radius: 8px;
-                font-size: 16px;
+                font-size: 18px;
                 font-weight: bold;
                 font-family: 'Arial', sans-serif;
-                padding: 10px;
+                padding: 15px;
             }
             QPushButton:hover {
-                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                    stop:0 #ff3333, stop:1 #ff0000);
-                border: 2px solid #ff3333;
+                background: #ff3333;
             }
             QPushButton:pressed {
-                background: #990000;
+                background: #cc0000;
             }
         """)
         rec_layout.addWidget(self.apply_button)
