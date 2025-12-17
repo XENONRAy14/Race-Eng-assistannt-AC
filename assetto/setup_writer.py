@@ -112,7 +112,7 @@ class SetupWriter:
         # Fallback: use behavior and timestamp
         behavior = setup.behavior or "custom"
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        behavior_clean = behavior.replace(" ", "_").lower()
+        behavior_clean = str(behavior).replace(" ", "_").lower()
         
         return f"rea_{behavior_clean}_{timestamp}"
     

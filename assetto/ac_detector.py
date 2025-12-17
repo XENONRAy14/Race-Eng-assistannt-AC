@@ -347,29 +347,31 @@ class ACDetector:
                     
                     # Parse length
                     length_str = data.get("length", "0")
-                    try:
-                        # Handle formats like "5.2 km" or "5200 m"
-                        length_str = length_str.lower().replace(",", "")
-                        if "km" in length_str:
-                            length_m = int(float(length_str.replace("km", "").strip()) * 1000)
-                        elif "m" in length_str:
-                            length_m = int(float(length_str.replace("m", "").strip()))
-                        else:
-                            length_m = int(float(length_str))
-                    except (ValueError, AttributeError):
-                        pass
+                    if length_str:  # Check if not None
+                        try:
+                            # Handle formats like "5.2 km" or "5200 m"
+                            length_str = str(length_str).lower().replace(",", "")
+                            if "km" in length_str:
+                                length_m = int(float(length_str.replace("km", "").strip()) * 1000)
+                            elif "m" in length_str:
+                                length_m = int(float(length_str.replace("m", "").strip()))
+                            else:
+                                length_m = int(float(length_str))
+                        except (ValueError, AttributeError, TypeError):
+                            pass
                     
                     # Detect track type from tags or name
                     tags = data.get("tags", [])
-                    description = data.get("description", "").lower()
+                    description = data.get("description", "")
                     
-                    if any(t.lower() in ["touge", "mountain", "hill"] for t in tags):
+                    # Safe lower() with null check
+                    if tags and any(str(t).lower() in ["touge", "mountain", "hill"] for t in tags if t):
                         track_type = "touge"
-                    elif any(t.lower() in ["drift"] for t in tags):
+                    elif tags and any(str(t).lower() in ["drift"] for t in tags if t):
                         track_type = "drift"
-                    elif any(t.lower() in ["circuit", "race"] for t in tags):
+                    elif tags and any(str(t).lower() in ["circuit", "race"] for t in tags if t):
                         track_type = "circuit"
-                    elif "touge" in description or "mountain" in description:
+                    elif description and ("touge" in str(description).lower() or "mountain" in str(description).lower()):
                         track_type = "touge"
             except (json.JSONDecodeError, IOError):
                 pass

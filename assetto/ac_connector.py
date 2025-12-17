@@ -232,20 +232,27 @@ class ACConnector:
     
     def search_cars(self, query: str) -> list[Car]:
         """Search cars by name or brand."""
-        query = query.lower()
+        if not query:
+            return self.get_cars()
+        query = str(query).lower()
         cars = self.get_cars()
         return [
             c for c in cars
-            if query in c.name.lower() or query in c.brand.lower() or query in c.car_id.lower()
+            if (c.name and query in c.name.lower()) or 
+               (c.brand and query in c.brand.lower()) or 
+               (c.car_id and query in c.car_id.lower())
         ]
     
     def search_tracks(self, query: str) -> list[Track]:
         """Search tracks by name."""
-        query = query.lower()
+        if not query:
+            return self.get_tracks()
+        query = str(query).lower()
         tracks = self.get_tracks()
         return [
             t for t in tracks
-            if query in t.name.lower() or query in t.track_id.lower()
+            if (t.name and query in t.name.lower()) or 
+               (t.track_id and query in t.track_id.lower())
         ]
     
     def refresh(self) -> ConnectionStatus:
