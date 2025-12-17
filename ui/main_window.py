@@ -709,15 +709,7 @@ class MainWindow(QMainWindow):
         """Initialize the application after UI is ready."""
         self.statusbar.showMessage("Connexion à Assetto Corsa...")
         
-        # Load saved AC path from user settings
-        user_settings = get_user_settings()
-        saved_game_path = user_settings.get_ac_game_path()
-        
-        if saved_game_path and saved_game_path.exists():
-            # Apply saved path before connecting
-            self._apply_saved_ac_path(saved_game_path)
-        
-        # Connect to AC
+        # Connect to AC (saved path is already loaded in main.py)
         status = self.connector.connect()
         
         if status.is_connected:

@@ -127,7 +127,12 @@ class ACDetector:
         """
         Detect full Assetto Corsa installation.
         Returns an ACInstallation object with all paths.
+        If an installation was already set (e.g. from saved settings), use that.
         """
+        # If already configured (from saved settings), return it
+        if self._installation is not None and self._installation.is_valid:
+            return self._installation
+        
         docs_path = self.detect_ac_documents_path()
         game_path = self.detect_ac_game_path()
         
