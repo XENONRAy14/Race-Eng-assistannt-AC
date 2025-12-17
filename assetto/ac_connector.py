@@ -51,9 +51,9 @@ class ACConnector:
     Provides unified interface for all AC operations.
     """
     
-    def __init__(self):
-        """Initialize connector."""
-        self.detector = ACDetector()
+    def __init__(self, detector: Optional[ACDetector] = None):
+        """Initialize connector with optional pre-configured detector."""
+        self.detector = detector if detector is not None else ACDetector()
         self.writer = SetupWriter()
         
         self._installation: Optional[ACInstallation] = None

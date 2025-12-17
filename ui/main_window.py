@@ -54,10 +54,8 @@ class MainWindow(QMainWindow):
         
         # Services
         self.repository = repository
-        self.connector = ACConnector()
-        # Use the pre-configured detector from main.py if provided
-        if detector is not None:
-            self.connector.detector = detector
+        # Pass the pre-configured detector to ACConnector
+        self.connector = ACConnector(detector=detector)
         self.setup_engine = SetupEngine()
         self.decision_engine = DecisionEngine(self.setup_engine)
         self.shared_memory = ACSharedMemory()
@@ -146,51 +144,82 @@ class MainWindow(QMainWindow):
         
         folder_path = Path(folder)
         
-        # Validate it's an AC folder
-        if not (folder_path / "AssettoCorsa.exe").exists() and not (folder_path / "content").exists():
+        # Validate it's an AC folder - check for content/cars and content/tracks
+        if not (folder_path / "content" / "cars").exists() or not (folder_path / "content" / "tracks").exists():
             QMessageBox.warning(
                 self,
                 "Dossier invalide",
                 "Ce dossier ne semble pas être une installation Assetto Corsa valide.\n\n"
-                "Cherchez le dossier contenant 'AssettoCorsa.exe' ou le dossier 'content'."
+                "Cherchez le dossier contenant 'content/cars' et 'content/tracks'.\n"
+                "Exemple: C:\\Steam\\steamapps\\common\\assettocorsa"
             )
             return
         
         # Update detector with custom path
-        if self.connector.detector._installation is None:
-            from assetto.ac_detector import ACInstallation
-            # Find documents path
-            docs_path = Path.home() / "Documents" / "Assetto Corsa"
-            if not docs_path.exists():
-                docs_path.mkdir(parents=True, exist_ok=True)
-            self.connector.detector._installation = ACInstallation(documents_path=docs_path)
-            # Setup writer needs the setups path
-            self.connector.writer.set_base_path(docs_path / "setups")
+        from assetto.ac_detector import ACInstallation
         
+        # Find or create documents path
+        docs_path = Path.home() / "Documents" / "Assetto Corsa"
+        if not docs_path.exists():
+            docs_path.mkdir(parents=True, exist_ok=True)
+        
+        # Create or update installation
+        self.connector.detector._installation = ACInstallation(documents_path=docs_path)
         self.connector.detector._installation.game_path = folder_path
         self.connector.detector._installation.cars_path = folder_path / "content" / "cars"
         self.connector.detector._installation.tracks_path = folder_path / "content" / "tracks"
         self.connector.detector._installation.is_valid = True
         self.connector.detector._installation.can_write_setups = True
         
+        # Setup writer needs the setups path
+        self.connector.writer.set_base_path(docs_path / "setups")
+        
         # Save the path for next launch
         user_settings = get_user_settings()
         user_settings.set_ac_game_path(folder_path)
         
-        # Update connection status in UI
-        self.connection_label.setText("🟢 Connecté à Assetto Corsa")
-        self.connection_label.setStyleSheet("color: #4CAF50;")
+        # Force reconnect to update status
+        self.statusbar.showMessage("Reconnexion à Assetto Corsa...")
+        status = self.connector.connect()
         
-        # Refresh content
-        self._on_refresh_content()
-        
-        QMessageBox.information(
-            self,
-            "Dossier AC configuré",
-            f"Dossier Assetto Corsa configuré:\n{folder_path}\n\n"
-            f"Les voitures et pistes ont été rechargées.\n"
-            f"Ce chemin sera mémorisé pour les prochains lancements."
-        )
+        if status.is_connected:
+            # Update connection status in UI
+            self.connection_label.setText("🟢 Connecté à Assetto Corsa")
+            self.connection_label.setStyleSheet("color: #4CAF50;")
+            
+            # Load cars and tracks
+            cars = self.connector.get_cars(force_refresh=True)
+            tracks = self.connector.get_tracks(force_refresh=True)
+            self._cars_cache = cars
+            self._tracks_cache = tracks
+            
+            self.car_track_selector.set_cars(cars)
+            self.car_track_selector.set_tracks(tracks)
+            
+            self.statusbar.showMessage(
+                f"✅ Connecté - {len(cars)} voitures, {len(tracks)} pistes"
+            )
+            
+            QMessageBox.information(
+                self,
+                "Connexion réussie",
+                f"Assetto Corsa détecté avec succès!\n\n"
+                f"Dossier: {folder_path}\n"
+                f"Voitures: {len(cars)}\n"
+                f"Pistes: {len(tracks)}\n\n"
+                f"Ce chemin sera mémorisé pour les prochains lancements."
+            )
+        else:
+            self.connection_label.setText("🔴 Erreur de connexion")
+            self.connection_label.setStyleSheet("color: #f44336;")
+            self.statusbar.showMessage("Erreur lors de la connexion")
+            
+            QMessageBox.warning(
+                self,
+                "Erreur",
+                "Le dossier a été configuré mais la connexion a échoué.\n\n"
+                "Vérifiez que le dossier contient bien 'content/cars' et 'content/tracks'."
+            )
     
     def _apply_saved_ac_path(self, folder_path: Path) -> None:
         """Apply a saved AC path to the connector."""

@@ -66,8 +66,8 @@ class ACDetector:
     
     def detect_ac_documents_path(self) -> Optional[Path]:
         """
-        Detect the Assetto Corsa Documents folder.
-        Returns the path if found, None otherwise.
+        Detect or create the Assetto Corsa Documents folder.
+        Returns the path, creating it if necessary.
         """
         # Standard Windows Documents path
         documents = Path.home() / "Documents" / "Assetto Corsa"
@@ -86,6 +86,13 @@ class ACDetector:
             alt_docs = Path(user_profile) / "Documents" / "Assetto Corsa"
             if alt_docs.exists():
                 return alt_docs
+        
+        # Create the standard Documents folder if it doesn't exist
+        try:
+            documents.mkdir(parents=True, exist_ok=True)
+            return documents
+        except (PermissionError, OSError):
+            pass
         
         return None
     
@@ -129,9 +136,13 @@ class ACDetector:
         Returns an ACInstallation object with all paths.
         If an installation was already set (e.g. from saved settings), use that.
         """
-        # If already configured (from saved settings), return it
-        if self._installation is not None and self._installation.is_valid:
-            return self._installation
+        # If already configured (from saved settings), validate and return it
+        if self._installation is not None:
+            # Re-validate the paths
+            if self._installation.game_path and self._installation.game_path.exists():
+                if (self._installation.game_path / "content" / "cars").exists():
+                    self._installation.is_valid = True
+                    return self._installation
         
         docs_path = self.detect_ac_documents_path()
         game_path = self.detect_ac_game_path()
@@ -141,20 +152,23 @@ class ACDetector:
             game_path=game_path
         )
         
-        # Validate installation - BOTH documents AND game path must exist
-        if docs_path and docs_path.exists() and game_path and game_path.exists():
-            installation.is_valid = True
-            
-            # Check write permissions
-            setups_path = docs_path / "setups"
-            try:
-                setups_path.mkdir(parents=True, exist_ok=True)
-                test_file = setups_path / ".write_test"
-                test_file.touch()
-                test_file.unlink()
-                installation.can_write_setups = True
-            except (PermissionError, OSError):
-                installation.can_write_setups = False
+        # Validate installation - game path must exist with content folder
+        if game_path and game_path.exists():
+            # Check for content/cars and content/tracks
+            if (game_path / "content" / "cars").exists() and (game_path / "content" / "tracks").exists():
+                installation.is_valid = True
+                
+                # Check write permissions to documents
+                if docs_path:
+                    setups_path = docs_path / "setups"
+                    try:
+                        setups_path.mkdir(parents=True, exist_ok=True)
+                        test_file = setups_path / ".write_test"
+                        test_file.touch()
+                        test_file.unlink()
+                        installation.can_write_setups = True
+                    except (PermissionError, OSError):
+                        installation.can_write_setups = False
         
         self._installation = installation
         return installation
