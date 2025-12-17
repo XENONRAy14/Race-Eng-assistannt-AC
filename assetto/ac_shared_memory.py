@@ -4,10 +4,32 @@ Uses the official AC Shared Memory API (no injection, no cheat).
 """
 
 import ctypes
-import mmap
+import ctypes.wintypes
 from dataclasses import dataclass
 from typing import Optional
 from enum import IntEnum
+
+# Windows API constants
+FILE_MAP_READ = 0x0004
+
+# Windows API functions
+kernel32 = ctypes.windll.kernel32
+
+OpenFileMappingW = kernel32.OpenFileMappingW
+OpenFileMappingW.argtypes = [ctypes.wintypes.DWORD, ctypes.wintypes.BOOL, ctypes.wintypes.LPCWSTR]
+OpenFileMappingW.restype = ctypes.wintypes.HANDLE
+
+MapViewOfFile = kernel32.MapViewOfFile
+MapViewOfFile.argtypes = [ctypes.wintypes.HANDLE, ctypes.wintypes.DWORD, ctypes.wintypes.DWORD, ctypes.wintypes.DWORD, ctypes.c_size_t]
+MapViewOfFile.restype = ctypes.c_void_p
+
+UnmapViewOfFile = kernel32.UnmapViewOfFile
+UnmapViewOfFile.argtypes = [ctypes.c_void_p]
+UnmapViewOfFile.restype = ctypes.wintypes.BOOL
+
+CloseHandle = kernel32.CloseHandle
+CloseHandle.argtypes = [ctypes.wintypes.HANDLE]
+CloseHandle.restype = ctypes.wintypes.BOOL
 
 
 class ACStatus(IntEnum):
@@ -262,7 +284,7 @@ class ACSharedMemory:
     """
     Reader for Assetto Corsa Shared Memory.
     Provides live game data without any injection or modification.
-    Uses Python mmap for Windows 10/11 compatibility.
+    Uses Windows API to ONLY open existing shared memory (never creates).
     """
     
     # Shared memory names
@@ -272,23 +294,49 @@ class ACSharedMemory:
     
     def __init__(self):
         """Initialize shared memory reader."""
-        self._physics_mmap: Optional[mmap.mmap] = None
-        self._graphics_mmap: Optional[mmap.mmap] = None
-        self._static_mmap: Optional[mmap.mmap] = None
+        self._physics_handle = None
+        self._physics_view = None
+        self._graphics_handle = None
+        self._graphics_view = None
+        self._static_handle = None
+        self._static_view = None
         
         self._is_connected = False
         self._last_car = ""
         self._last_track = ""
 
-    def _open_mmap(self, name: str, size: int) -> Optional[mmap.mmap]:
-        """Open an existing named shared memory using mmap."""
+    def _open_shared_memory(self, name: str, size: int) -> tuple:
+        """
+        Open an EXISTING shared memory using Windows API.
+        Returns (handle, view_ptr) or (None, None) if not found.
+        NEVER creates new shared memory - only opens existing.
+        """
         try:
-            # mmap with tagname opens existing shared memory on Windows
-            # Using access=mmap.ACCESS_READ for read-only
-            m = mmap.mmap(-1, size, tagname=name, access=mmap.ACCESS_READ)
-            return m
-        except (OSError, ValueError, PermissionError):
-            return None
+            # OpenFileMappingW opens EXISTING shared memory only
+            # It will FAIL if the shared memory doesn't exist (which is what we want)
+            handle = OpenFileMappingW(FILE_MAP_READ, False, name)
+            if not handle:
+                return (None, None)
+            
+            # Map view of file for reading
+            view = MapViewOfFile(handle, FILE_MAP_READ, 0, 0, size)
+            if not view:
+                CloseHandle(handle)
+                return (None, None)
+            
+            return (handle, view)
+        except Exception:
+            return (None, None)
+    
+    def _close_shared_memory(self, handle, view) -> None:
+        """Close shared memory handle and view."""
+        try:
+            if view:
+                UnmapViewOfFile(view)
+            if handle:
+                CloseHandle(handle)
+        except Exception:
+            pass
     
     def connect(self) -> bool:
         """
@@ -296,25 +344,31 @@ class ACSharedMemory:
         Returns True if successful.
         """
         try:
-            # Try to open all three shared memory regions
-            physics = self._open_mmap(self.PHYSICS_MAP, ctypes.sizeof(SPageFilePhysics))
-            graphics = self._open_mmap(self.GRAPHICS_MAP, ctypes.sizeof(SPageFileGraphic))
-            static = self._open_mmap(self.STATIC_MAP, ctypes.sizeof(SPageFileStatic))
+            # Try to open all three shared memory regions (EXISTING ONLY)
+            p_handle, p_view = self._open_shared_memory(
+                self.PHYSICS_MAP, ctypes.sizeof(SPageFilePhysics)
+            )
+            g_handle, g_view = self._open_shared_memory(
+                self.GRAPHICS_MAP, ctypes.sizeof(SPageFileGraphic)
+            )
+            s_handle, s_view = self._open_shared_memory(
+                self.STATIC_MAP, ctypes.sizeof(SPageFileStatic)
+            )
 
-            if not (physics and graphics and static):
+            if not (p_handle and g_handle and s_handle):
                 # Close any that were opened
-                if physics:
-                    physics.close()
-                if graphics:
-                    graphics.close()
-                if static:
-                    static.close()
+                self._close_shared_memory(p_handle, p_view)
+                self._close_shared_memory(g_handle, g_view)
+                self._close_shared_memory(s_handle, s_view)
                 self._is_connected = False
                 return False
 
-            self._physics_mmap = physics
-            self._graphics_mmap = graphics
-            self._static_mmap = static
+            self._physics_handle = p_handle
+            self._physics_view = p_view
+            self._graphics_handle = g_handle
+            self._graphics_view = g_view
+            self._static_handle = s_handle
+            self._static_view = s_view
             
             self._is_connected = True
             return True
@@ -326,25 +380,16 @@ class ACSharedMemory:
     
     def disconnect(self) -> None:
         """Disconnect from shared memory."""
-        if self._physics_mmap:
-            try:
-                self._physics_mmap.close()
-            except:
-                pass
-        if self._graphics_mmap:
-            try:
-                self._graphics_mmap.close()
-            except:
-                pass
-        if self._static_mmap:
-            try:
-                self._static_mmap.close()
-            except:
-                pass
-
-        self._physics_mmap = None
-        self._graphics_mmap = None
-        self._static_mmap = None
+        self._close_shared_memory(self._physics_handle, self._physics_view)
+        self._close_shared_memory(self._graphics_handle, self._graphics_view)
+        self._close_shared_memory(self._static_handle, self._static_view)
+        
+        self._physics_handle = None
+        self._physics_view = None
+        self._graphics_handle = None
+        self._graphics_view = None
+        self._static_handle = None
+        self._static_view = None
         
         self._is_connected = False
     
@@ -355,37 +400,32 @@ class ACSharedMemory:
     
     def read_static(self) -> Optional[SPageFileStatic]:
         """Read static data (car, track info)."""
-        if not self._static_mmap:
+        if not self._static_view:
             return None
         
         try:
-            self._static_mmap.seek(0)
-            data = self._static_mmap.read(ctypes.sizeof(SPageFileStatic))
-            return SPageFileStatic.from_buffer_copy(data)
+            # Read directly from memory view using ctypes
+            return SPageFileStatic.from_address(self._static_view)
         except Exception:
             return None
     
     def read_physics(self) -> Optional[SPageFilePhysics]:
         """Read physics data (telemetry)."""
-        if not self._physics_mmap:
+        if not self._physics_view:
             return None
         
         try:
-            self._physics_mmap.seek(0)
-            data = self._physics_mmap.read(ctypes.sizeof(SPageFilePhysics))
-            return SPageFilePhysics.from_buffer_copy(data)
+            return SPageFilePhysics.from_address(self._physics_view)
         except Exception:
             return None
     
     def read_graphics(self) -> Optional[SPageFileGraphic]:
         """Read graphics data (session info)."""
-        if not self._graphics_mmap:
+        if not self._graphics_view:
             return None
         
         try:
-            self._graphics_mmap.seek(0)
-            data = self._graphics_mmap.read(ctypes.sizeof(SPageFileGraphic))
-            return SPageFileGraphic.from_buffer_copy(data)
+            return SPageFileGraphic.from_address(self._graphics_view)
         except Exception:
             return None
     
