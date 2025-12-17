@@ -104,11 +104,12 @@ class MetricBar(QFrame):
         
         # Label
         self.label = QLabel(label)
-        self.label.setFixedWidth(100)
+        self.label.setFixedWidth(120)
         self.label.setStyleSheet("""
-            color: #888;
+            color: #ffffff;
             font-family: 'Arial', sans-serif;
-            font-size: 12px;
+            font-size: 14px;
+            font-weight: bold;
         """)
         layout.addWidget(self.label)
         
@@ -154,10 +155,11 @@ class MetricBar(QFrame):
 class DrivingStyleWidget(QWidget):
     """Main driving style analysis widget with Initial D design."""
     
-    apply_recommendation = Signal()
+    apply_recommendation = Signal(str)  # Emit behavior string
     
     def __init__(self, parent=None):
         super().__init__(parent)
+        self._recommended_behavior = "balanced"  # Default
         self._setup_ui()
     
     def _setup_ui(self):
@@ -198,13 +200,14 @@ class DrivingStyleWidget(QWidget):
         metrics_layout.setSpacing(8)
         
         # Metrics title
-        metrics_title = QLabel("Métriques")
+        metrics_title = QLabel("📊 Métriques de Conduite")
         metrics_title.setStyleSheet("""
             color: #ff0000;
             font-family: 'Arial', sans-serif;
-            font-size: 14px;
+            font-size: 16px;
             font-weight: bold;
             letter-spacing: 1px;
+            margin-bottom: 5px;
         """)
         metrics_layout.addWidget(metrics_title)
         
@@ -247,7 +250,8 @@ class DrivingStyleWidget(QWidget):
         self.rec_label.setStyleSheet("""
             color: #ffffff;
             font-family: 'Arial', sans-serif;
-            font-size: 14px;
+            font-size: 16px;
+            font-weight: bold;
         """)
         rec_layout.addWidget(self.rec_label)
         
@@ -255,20 +259,46 @@ class DrivingStyleWidget(QWidget):
         self.rec_detail.setAlignment(Qt.AlignCenter)
         self.rec_detail.setWordWrap(True)
         self.rec_detail.setStyleSheet("""
-            color: #888;
+            color: #cccccc;
             font-family: 'Arial', sans-serif;
-            font-size: 12px;
+            font-size: 14px;
+            line-height: 1.5;
         """)
         rec_layout.addWidget(self.rec_detail)
         
         # Apply button
         self.apply_button = QPushButton("⚡ Appliquer la recommandation")
-        self.apply_button.clicked.connect(self.apply_recommendation.emit)
-        self.apply_button.setMinimumHeight(45)
+        self.apply_button.clicked.connect(self._on_apply_clicked)
+        self.apply_button.setMinimumHeight(50)
+        self.apply_button.setStyleSheet("""
+            QPushButton {
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                    stop:0 #ff0000, stop:1 #cc0000);
+                color: #ffffff;
+                border: 2px solid #ff0000;
+                border-radius: 8px;
+                font-size: 16px;
+                font-weight: bold;
+                font-family: 'Arial', sans-serif;
+                padding: 10px;
+            }
+            QPushButton:hover {
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                    stop:0 #ff3333, stop:1 #ff0000);
+                border: 2px solid #ff3333;
+            }
+            QPushButton:pressed {
+                background: #990000;
+            }
+        """)
         rec_layout.addWidget(self.apply_button)
         
         layout.addWidget(rec_group)
         layout.addStretch()
+    
+    def _on_apply_clicked(self):
+        """Handle apply button click."""
+        self.apply_recommendation.emit(self._recommended_behavior)
     
     def update_analysis(self, metrics: DrivingMetrics, style: DrivingStyle, confidence: float):
         """Update the analysis display."""
@@ -280,26 +310,31 @@ class DrivingStyleWidget(QWidget):
         self.smoothness_bar.set_value(metrics.smoothness)
         self.drift_bar.set_value(metrics.drift_tendency)
         
-        # Update recommendation
+        # Update recommendation and store behavior
         recommendations = {
             DrivingStyle.SMOOTH: (
                 "🎯 Style fluide détecté!",
-                "Je recommande le mode 'Safe' ou 'Balanced' pour maximiser ton grip et ta constance."
+                "Je recommande le mode 'Safe' ou 'Balanced' pour maximiser ton grip et ta constance.",
+                "safe"
             ),
             DrivingStyle.BALANCED: (
                 "⚖️ Style équilibré détecté!",
-                "Le mode 'Balanced' est parfait pour toi. Tu peux aussi essayer 'Attack' pour plus de performance."
+                "Le mode 'Balanced' est parfait pour toi. Tu peux aussi essayer 'Attack' pour plus de performance.",
+                "balanced"
             ),
             DrivingStyle.AGGRESSIVE: (
                 "🔥 Style agressif détecté!",
-                "Le mode 'Attack' est fait pour toi! Attention à ne pas trop abîmer les pneus."
+                "Le mode 'Attack' est fait pour toi! Attention à ne pas trop abîmer les pneus.",
+                "attack"
             ),
             DrivingStyle.DRIFT: (
                 "💨 Style drift détecté!",
-                "Le mode 'Drift' est optimal pour ton style. Profite des glissades contrôlées!"
+                "Le mode 'Drift' est optimal pour ton style. Profite des glissades contrôlées!",
+                "drift"
             )
         }
         
-        label, detail = recommendations.get(style, ("❓", "Analyse en cours..."))
+        label, detail, behavior = recommendations.get(style, ("❓", "Analyse en cours...", "balanced"))
         self.rec_label.setText(label)
         self.rec_detail.setText(detail)
+        self._recommended_behavior = behavior

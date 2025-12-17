@@ -630,9 +630,32 @@ class MainWindow(QMainWindow):
     
     def _on_apply_style_recommendation(self, behavior: str) -> None:
         """Apply the recommended behavior from driving analysis."""
+        from PySide6.QtWidgets import QMessageBox
+        
+        # Map behavior to display name
+        behavior_names = {
+            "safe": "Safe (Sécuritaire)",
+            "balanced": "Balanced (Équilibré)",
+            "attack": "Attack (Agressif)",
+            "drift": "Drift"
+        }
+        
+        behavior_name = behavior_names.get(behavior, behavior)
+        
+        # Apply the behavior
         self.behavior_selector.set_behavior(behavior)
         self._on_behavior_changed(behavior)
-        self.statusbar.showMessage(f"✨ Mode '{behavior}' appliqué selon ton style de conduite!")
+        
+        # Show confirmation
+        self.statusbar.showMessage(f"✨ Mode '{behavior_name}' appliqué selon ton style de conduite!")
+        
+        QMessageBox.information(
+            self,
+            "✅ Recommandation appliquée",
+            f"Le mode '{behavior_name}' a été appliqué avec succès!\n\n"
+            f"Ce mode est adapté à ton style de conduite détecté.\n\n"
+            f"Tu peux maintenant générer un setup optimisé."
+        )
     
     def _on_preset_loaded(self, preset) -> None:
         """Load a preset into the current settings."""
