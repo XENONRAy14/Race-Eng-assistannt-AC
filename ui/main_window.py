@@ -1038,6 +1038,24 @@ class MainWindow(QMainWindow):
             if live_data.track_config:
                 track_name += f" ({live_data.track_config})"
             self.track_map_widget.set_track_info(track_name, live_data.track_length)
+            
+            # Load track layout from AC files
+            if self.connector.detector._installation and self.connector.detector._installation.tracks_path:
+                track_id = live_data.track
+                track_config = live_data.track_config
+                tracks_path = self.connector.detector._installation.tracks_path
+                
+                # Try to find track folder
+                if track_config:
+                    track_path = tracks_path / track_id / track_config
+                    if not track_path.exists():
+                        track_path = tracks_path / track_id
+                else:
+                    track_path = tracks_path / track_id
+                
+                if track_path.exists():
+                    self.track_map_widget.set_track_path(track_path)
+            
             self._track_map_initialized = True
         
         # Update car position
