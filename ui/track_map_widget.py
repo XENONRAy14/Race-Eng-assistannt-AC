@@ -20,8 +20,7 @@ class SectorStatus(Enum):
     NONE = 0
     CURRENT = 1
     PERSONAL_BEST = 2
-    SESSION_BEST = 3
-    SLOWER = 4
+    SLOWER = 3
 
 
 @dataclass
@@ -135,11 +134,9 @@ class TrackVisualization(QWidget):
             if i < len(self._sector_statuses):
                 status = self._sector_statuses[i]
                 if status == SectorStatus.PERSONAL_BEST:
-                    color = QColor("#4CAF50")  # Green
-                elif status == SectorStatus.SESSION_BEST:
-                    color = QColor("#9C27B0")  # Purple
+                    color = QColor("#4CAF50")  # Green - personal best
                 elif status == SectorStatus.SLOWER:
-                    color = QColor("#F44336")  # Red
+                    color = QColor("#F44336")  # Red - slower than best
                 elif status == SectorStatus.CURRENT:
                     color = self._sector_colors[i % len(self._sector_colors)].lighter(130)
                 else:
@@ -250,8 +247,6 @@ class SectorTimeDisplay(QFrame):
         # Color based on status
         if status == SectorStatus.PERSONAL_BEST:
             self.time_label.setStyleSheet("color: #4CAF50; font-size: 18px; font-weight: bold;")
-        elif status == SectorStatus.SESSION_BEST:
-            self.time_label.setStyleSheet("color: #9C27B0; font-size: 18px; font-weight: bold;")
         elif status == SectorStatus.SLOWER:
             self.time_label.setStyleSheet("color: #F44336; font-size: 18px; font-weight: bold;")
         else:
