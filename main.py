@@ -14,6 +14,7 @@ PROJECT_ROOT = Path(__file__).parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
 from ui.main_window import MainWindow
+from ui.initial_d_style import apply_initial_d_style
 from data.setup_repository import SetupRepository
 from assetto.ac_detector import ACDetector, ACInstallation
 from config.user_settings import get_user_settings
@@ -30,6 +31,9 @@ def main():
     app.setApplicationName("Race Engineer Assistant")
     app.setApplicationVersion("1.0.0")
     app.setOrganizationName("TougeEngineering")
+    
+    # Apply Initial D black/red gradient style
+    apply_initial_d_style(app)
     
     # Initialize database
     db_path = PROJECT_ROOT / "data" / "database.db"

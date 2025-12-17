@@ -1066,13 +1066,16 @@ class MainWindow(QMainWindow):
         
         # Check for sector change to record sector time
         if live_data.current_sector_index != self._last_sector_index:
+            # When sector changes, lastSectorTime contains the time for the PREVIOUS sector
             if self._last_sector_index >= 0 and live_data.last_sector_time_ms > 0:
                 # Record the completed sector time
+                print(f"[DEBUG] Sector {self._last_sector_index} completed: {live_data.last_sector_time_ms}ms")
                 self.track_map_widget.update_sector_time(
                     self._last_sector_index,
                     live_data.last_sector_time_ms
                 )
             self._last_sector_index = live_data.current_sector_index
+            print(f"[DEBUG] Now in sector {live_data.current_sector_index}")
         
         # Update lap times
         self.track_map_widget.update_lap_times(
