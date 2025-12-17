@@ -141,8 +141,8 @@ class ACDetector:
             game_path=game_path
         )
         
-        # Validate installation
-        if docs_path and docs_path.exists():
+        # Validate installation - BOTH documents AND game path must exist
+        if docs_path and docs_path.exists() and game_path and game_path.exists():
             installation.is_valid = True
             
             # Check write permissions
