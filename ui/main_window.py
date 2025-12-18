@@ -61,6 +61,11 @@ class MainWindow(QMainWindow):
         self.shared_memory = ACSharedMemory()
         self.driving_analyzer = DrivingAnalyzer()
         
+        # Adaptive AI engine
+        from ai.adaptive_setup_engine import AdaptiveSetupEngine, TrackConditions
+        self.adaptive_engine = AdaptiveSetupEngine()
+        self.current_conditions = TrackConditions()  # Default conditions
+        
         # State
         self._current_profile: Optional[DriverProfile] = None
         self._current_setup: Optional[Setup] = None
@@ -531,6 +536,12 @@ class MainWindow(QMainWindow):
         self.presets_panel.preset_loaded.connect(self._on_preset_loaded)
         self.right_tabs.addTab(self.presets_panel, "⭐ Presets")
         
+        # Tab 6: Adaptive IA
+        from ui.adaptive_panel import AdaptivePanel
+        self.adaptive_panel = AdaptivePanel()
+        self.adaptive_panel.apply_adaptive.connect(self._on_apply_adaptive)
+        self.right_tabs.addTab(self.adaptive_panel, "🤖 IA Adaptive")
+        
         layout.addWidget(self.right_tabs)
         
         return panel
@@ -673,13 +684,88 @@ class MainWindow(QMainWindow):
             self.sliders_panel.set_profile(self._current_profile)
         
         self._update_preview()
-        self.statusbar.showMessage(f"⭐ Preset '{preset.name}' chargé!")
+        self.statusbar.showMessage(f"✨ Preset '{preset.name}' chargé!")
+    
+    def _on_apply_adaptive(self) -> None:
+        """Apply adaptive AI optimization to current setup."""
+        from PySide6.QtWidgets import QMessageBox
+        from ai.adaptive_setup_engine import TrackConditions
+        
+        car = self.car_track_selector.get_selected_car()
+        track = self.car_track_selector.get_selected_track()
+        
+        if not car or not track:
+            QMessageBox.warning(
+                self,
+                "Sélection manquante",
+                "Veuillez sélectionner une voiture et une piste d'abord."
+            )
+            return
+        
+        # Get current conditions from adaptive panel
+        conditions_dict = self.adaptive_panel.get_conditions()
+        conditions = TrackConditions(
+            temperature=conditions_dict["temperature"],
+            track_temp=conditions_dict["track_temp"],
+            weather=conditions_dict["weather"]
+        )
+        
+        # Generate base setup
+        behavior_id = self.behavior_selector.get_selected_behavior()
+        base_setup = self.setup_engine.generate_setup(
+            car=car,
+            track=track,
+            profile=self._current_profile,
+            behavior=behavior_id
+        )
+        
+        # Apply adaptive adjustments
+        adapted_setup = self.adaptive_engine.adapt_setup_to_conditions(
+            base_setup, conditions, car, track
+        )
+        
+        # Apply learned optimizations
+        optimized_setup = self.adaptive_engine.apply_learned_adjustments(adapted_setup)
+        
+        # Update current setup
+        self._current_setup = optimized_setup
+        
+        # Get performance stats
+        stats = self.adaptive_engine.get_performance_stats(car.car_id, track.track_id)
+        self.adaptive_panel.update_stats(stats)
+        
+        # Show success message
+        msg = "✅ Setup optimisé par l'IA!\n\n"
+        msg += f"🌡️ Conditions appliquées:\n"
+        msg += f"  - Température: {conditions.temperature}°C\n"
+        msg += f"  - Piste: {conditions.track_temp}°C\n"
+        msg += f"  - Météo: {conditions.weather}\n\n"
+        
+        if stats.get("has_data", False):
+            confidence = min(stats['total_laps'] / 50.0 * 100, 100)
+            msg += f"🤖 Optimisations IA (confiance: {confidence:.0f}%):\n"
+            msg += f"  - Basé sur {stats['total_laps']} tours\n"
+            msg += f"  - Meilleur temps: {stats['your_best']:.3f}s\n"
+            msg += f"  - Classement: {stats['rank_estimate']}\n"
+        else:
+            msg += "ℹ️ Pas encore de données d'apprentissage.\n"
+            msg += "Roule quelques tours pour que l'IA apprenne!"
+        
+        QMessageBox.information(
+            self,
+            "🤖 IA Adaptive",
+            msg
+        )
+        
+        self.statusbar.showMessage("🤖 Setup optimisé par l'IA adaptive!")
+        
+        # Update preview
+        self._update_preview()
     
     def _start_telemetry_polling(self) -> None:
-        """Start polling telemetry data from AC."""
-        if self._telemetry_timer is None:
-            self._telemetry_timer = QTimer(self)
-            self._telemetry_timer.timeout.connect(self._poll_telemetry)
+        """Start polling telemetry data."""
+        self._telemetry_timer = QTimer(self)
+        self._telemetry_timer.timeout.connect(self._poll_telemetry)
         self._telemetry_timer.start(50)  # 20Hz for smooth display
     
     def _poll_telemetry(self) -> None:
