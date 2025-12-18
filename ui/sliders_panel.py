@@ -5,7 +5,7 @@ Provides interactive sliders for adjusting driving style preferences.
 
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, 
-    QSlider, QGroupBox, QFrame
+    QSlider, QGroupBox, QFrame, QPushButton
 )
 from PySide6.QtCore import Qt, Signal
 
@@ -112,7 +112,7 @@ class LabeledSlider(QWidget):
 
 class SlidersPanel(QWidget):
     """
-    Panel containing all driver preference sliders.
+    Panel containing all driver profile sliders.
     Emits signal when any slider changes.
     """
     
@@ -120,7 +120,7 @@ class SlidersPanel(QWidget):
     
     def __init__(self, parent=None):
         super().__init__(parent)
-        
+        self._expert_mode = False  # Start in simple mode
         self._profile: DriverProfile = DriverProfile()
         self._setup_ui()
     

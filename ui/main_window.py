@@ -74,6 +74,7 @@ class MainWindow(QMainWindow):
         self._telemetry_timer: Optional[QTimer] = None
         self._last_detected_car: str = ""
         self._last_detected_track: str = ""
+        self._auto_generate_enabled: bool = True  # Auto-generate on detection
         self._cars_cache: list[Car] = []
         self._tracks_cache: list[Track] = []
         self._last_sector_index: int = -1
@@ -513,6 +514,12 @@ class MainWindow(QMainWindow):
                 background-color: #3a3a4a;
             }
         """)
+        
+        # Tab 0: Quick Start (NEW - First tab for simplicity)
+        from ui.quick_start_widget import QuickStartWidget
+        self.quick_start_widget = QuickStartWidget()
+        self.quick_start_widget.generate_auto_setup.connect(self._on_quick_start_generate)
+        self.right_tabs.addTab(self.quick_start_widget, "🚀 Démarrage Rapide")
         
         # Tab 1: Setup Preview (original)
         setup_tab = self._create_setup_preview_tab()
@@ -1306,6 +1313,101 @@ class MainWindow(QMainWindow):
             delta = live_data.current_lap_time_ms - expected_time
             self.track_map_widget.update_delta(delta)
     
+    def _on_quick_start_generate(self) -> None:
+        """Handle quick start generate button."""
+        # Use the auto-detected car and track
+        car = self.car_track_selector.get_selected_car()
+        track = self.car_track_selector.get_selected_track()
+        
+        if not car or not track:
+            from PySide6.QtWidgets import QMessageBox
+            QMessageBox.warning(
+                self,
+                "Aucune détection",
+                "Lance Assetto Corsa et sélectionne une voiture et une piste d'abord."
+            )
+            return
+        
+        # Update quick start status
+        self.quick_start_widget.set_status("generating")
+        
+        # Auto-detect driving style from recent data
+        metrics = self.driving_analyzer.get_current_metrics()
+        if metrics:
+            style, confidence = self.driving_analyzer.analyze_style(metrics)
+            # Auto-apply the detected style
+            style_to_behavior = {
+                "SMOOTH": "safe",
+                "BALANCED": "balanced",
+                "AGGRESSIVE": "attack",
+                "DRIFT": "drift"
+            }
+            behavior = style_to_behavior.get(style.name, "balanced")
+            self.behavior_selector.set_behavior(behavior)
+        
+        # Get current conditions from AC if available
+        try:
+            live_data = self.shared_memory.get_live_data()
+            if live_data and live_data.is_connected:
+                # Update conditions based on live data
+                from ai.adaptive_setup_engine import TrackConditions
+                self.current_conditions = TrackConditions(
+                    temperature=live_data.ambient_temp if hasattr(live_data, 'ambient_temp') else 25.0,
+                    track_temp=live_data.road_temp if hasattr(live_data, 'road_temp') else 30.0,
+                    weather="dry"  # AC doesn't provide weather in shared memory
+                )
+        except:
+            pass
+        
+        # Generate setup with all optimizations
+        behavior_id = self.behavior_selector.get_selected_behavior()
+        base_setup = self.setup_engine.generate_setup(
+            car=car,
+            track=track,
+            profile=self._current_profile,
+            behavior=behavior_id
+        )
+        
+        # Apply adaptive adjustments
+        adapted_setup = self.adaptive_engine.adapt_setup_to_conditions(
+            base_setup, self.current_conditions, car, track
+        )
+        
+        # Apply learned optimizations
+        optimized_setup = self.adaptive_engine.apply_learned_adjustments(adapted_setup)
+        
+        # Save and apply
+        self._current_setup = optimized_setup
+        self.repository.save_setup(optimized_setup)
+        
+        # Write to AC
+        from assetto.setup_writer import SetupWriter
+        writer = SetupWriter(self.connector.detector.game_path)
+        success = writer.write_setup(optimized_setup)
+        
+        if success:
+            self.quick_start_widget.set_status("done")
+            self.statusbar.showMessage("🎯 Setup généré et appliqué automatiquement!")
+            
+            # Show brief success notification
+            from PySide6.QtWidgets import QMessageBox
+            QMessageBox.information(
+                self,
+                "✅ Setup Prêt!",
+                f"Ton setup a été généré et appliqué!\n\n"
+                f"🏎️ {car.name}\n"
+                f"🏁 {track.name}\n\n"
+                f"Tu peux maintenant rouler!"
+            )
+        else:
+            self.quick_start_widget.set_status("ready", car.name, track.name)
+            from PySide6.QtWidgets import QMessageBox
+            QMessageBox.warning(
+                self,
+                "⚠️ Erreur",
+                "Impossible d'écrire le setup. Vérifie que AC est bien installé."
+            )
+    
     def _auto_select_car_track(self, car_model: str, track: str, track_config: str) -> None:
         """Auto-select car and track in the UI based on live detection."""
         cars = self._cars_cache if self._cars_cache else self.connector.get_cars()
@@ -1354,26 +1456,26 @@ class MainWindow(QMainWindow):
             self.car_track_selector.set_selected_track(fallback_track.track_id, track_config)
             track_found = True
         
-        # Notify user
+        # Notify user and update Quick Start widget
         if car_found and track_found:
             self.statusbar.showMessage(
                 f"🎯 Détection auto: {car_model} sur {track}"
             )
             self._update_preview()
             
-            # Show notification
-            QMessageBox.information(
-                self,
-                "Détection automatique",
-                f"Voiture et piste détectées automatiquement!\n\n"
-                f"Voiture: {car_model}\n"
-                f"Piste: {track}\n\n"
-                f"Vous pouvez maintenant générer un setup."
-            )
+            # Update Quick Start widget to ready state
+            car_obj = self.car_track_selector.get_selected_car()
+            track_obj = self.car_track_selector.get_selected_track()
+            if car_obj and track_obj:
+                self.quick_start_widget.set_status("ready", car_obj.name, track_obj.name)
+            
+            # Switch to Quick Start tab automatically for easy access
+            self.right_tabs.setCurrentIndex(0)
         elif car_found or track_found:
             self.statusbar.showMessage(
                 f"⚠️ Détection partielle: {car_model} / {track}"
             )
+            self.quick_start_widget.set_status("detecting")
     
     def closeEvent(self, event) -> None:
         """Handle window close."""
