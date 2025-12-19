@@ -16,9 +16,9 @@ from PySide6.QtGui import QFont, QColor, QPalette
 from typing import Optional
 from pathlib import Path
 
-from ui.car_track_selector import CarTrackSelector
+from ui.car_track_selector_v2 import CarTrackSelector
 from ui.behavior_selector import BehaviorSelector
-from ui.sliders_panel import SlidersPanel
+from ui.sliders_panel_v2 import SlidersPanel
 from ui.telemetry_panel_v2 import TelemetryPanel, TelemetryData
 from ui.presets_panel import PresetsPanel
 from ui.driving_style_widget import DrivingStyleWidget
@@ -102,19 +102,28 @@ class MainWindow(QMainWindow):
         menubar = self.menuBar()
         menubar.setStyleSheet("""
             QMenuBar {
-                background-color: #1a1a1a;
-                color: #fff;
+                background-color: #000000;
+                color: #ffffff;
+                padding: 5px;
+                border-bottom: 1px solid rgba(255, 0, 0, 0.15);
+            }
+            QMenuBar::item {
+                padding: 6px 12px;
+                background: transparent;
             }
             QMenuBar::item:selected {
-                background-color: #333;
+                background-color: rgba(255, 0, 0, 0.2);
             }
             QMenu {
-                background-color: #2a2a2a;
-                color: #fff;
-                border: 1px solid #444;
+                background-color: #1a1a1a;
+                color: #ffffff;
+                border: 1px solid rgba(255, 0, 0, 0.3);
+            }
+            QMenu::item {
+                padding: 8px 25px;
             }
             QMenu::item:selected {
-                background-color: #2196F3;
+                background-color: #ff0000;
             }
         """)
         
@@ -236,8 +245,8 @@ class MainWindow(QMainWindow):
                 print("[DEBUG] Connection successful, loading content...")
                 
                 # Update connection status in UI
-                self.connection_label.setText("🟢 Connecté à Assetto Corsa")
-                self.connection_label.setStyleSheet("color: #4CAF50;")
+                self.connection_label.setText("● CONNECTED")
+                self.connection_label.setStyleSheet("color: #00ff00; font-size: 11px; font-weight: bold; letter-spacing: 1px;")
                 
                 # Load cars and tracks
                 cars = self.connector.get_cars(force_refresh=True)
