@@ -257,17 +257,25 @@ class CarTrackSelector(QWidget):
         """Select car by ID."""
         for i in range(self.car_combo.count()):
             car = self.car_combo.itemData(i)
-            if car and car.id == car_id:
+            if car and car.car_id == car_id:
                 self.car_combo.setCurrentIndex(i)
                 return True
         return False
+    
+    def set_selected_car(self, car_id: str) -> bool:
+        """Set selected car by ID (alias for select_car_by_id)."""
+        return self.select_car_by_id(car_id)
     
     def select_track_by_id(self, track_id: str, config: str = None) -> bool:
         """Select track by ID and optional config."""
         for i in range(self.track_combo.count()):
             track = self.track_combo.itemData(i)
-            if track and track.id == track_id:
+            if track and track.track_id == track_id:
                 if config is None or track.config == config:
                     self.track_combo.setCurrentIndex(i)
                     return True
         return False
+    
+    def set_selected_track(self, track_id: str, config: str = None) -> bool:
+        """Set selected track by ID (alias for select_track_by_id)."""
+        return self.select_track_by_id(track_id, config)
