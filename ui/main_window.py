@@ -734,11 +734,11 @@ class MainWindow(QMainWindow):
         
         # Generate base setup
         behavior_id = self.behavior_selector.get_selected_behavior()
-        base_setup = self.setup_engine.generate_setup(
-            car=car,
-            track=track,
+        base_setup, _ = self.setup_engine.generate_setup(
             profile=self._current_profile,
-            behavior=behavior_id
+            behavior_id=behavior_id,
+            car=car,
+            track=track
         )
         
         # Apply adaptive adjustments
@@ -830,8 +830,7 @@ class MainWindow(QMainWindow):
                 
                 # Update driving style widget if we got new analysis
                 if metrics:
-                    style, confidence = self.driving_analyzer.analyze_style(metrics)
-                    self.driving_style_widget.update_analysis(metrics, style, confidence)
+                    self.driving_style_widget.update_analysis(metrics, metrics.style, metrics.confidence)
         except Exception:
             pass
     
@@ -1388,9 +1387,8 @@ class MainWindow(QMainWindow):
         self.quick_start_widget.set_status("generating")
         
         # Auto-detect driving style from recent data
-        metrics = self.driving_analyzer.get_current_metrics()
-        if metrics:
-            style, confidence = self.driving_analyzer.analyze_style(metrics)
+        metrics = self.driving_analyzer.get_metrics()
+        if metrics and metrics.confidence > 0.3:
             # Auto-apply the detected style
             style_to_behavior = {
                 "SMOOTH": "safe",
@@ -1398,7 +1396,7 @@ class MainWindow(QMainWindow):
                 "AGGRESSIVE": "attack",
                 "DRIFT": "drift"
             }
-            behavior = style_to_behavior.get(style.name, "balanced")
+            behavior = style_to_behavior.get(metrics.style.name, "balanced")
             self.behavior_selector.set_behavior(behavior)
         
         # Get current conditions from AC if available
@@ -1417,11 +1415,11 @@ class MainWindow(QMainWindow):
         
         # Generate setup with all optimizations
         behavior_id = self.behavior_selector.get_selected_behavior()
-        base_setup = self.setup_engine.generate_setup(
-            car=car,
-            track=track,
+        base_setup, _ = self.setup_engine.generate_setup(
             profile=self._current_profile,
-            behavior=behavior_id
+            behavior_id=behavior_id,
+            car=car,
+            track=track
         )
         
         # Apply adaptive adjustments

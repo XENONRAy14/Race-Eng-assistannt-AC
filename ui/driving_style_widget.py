@@ -282,11 +282,11 @@ class DrivingStyleWidget(QWidget):
         self.style_badge.set_style(style, confidence)
         
         # Update metric bars
-        self.aggression_bar.set_value(metrics.aggression)
-        self.smoothness_bar.set_value(metrics.smoothness)
-        self.consistency_bar.set_value(metrics.consistency)
-        self.braking_bar.set_value(metrics.braking_efficiency)
-        self.cornering_bar.set_value(metrics.cornering_speed)
+        self.aggression_bar.set_value(metrics.aggression_score)
+        self.smoothness_bar.set_value(metrics.smoothness_score)
+        self.consistency_bar.set_value(metrics.steering_smoothness)  # Use steering smoothness as consistency
+        self.braking_bar.set_value(metrics.brake_smoothness)
+        self.cornering_bar.set_value(metrics.avg_lateral_g / 1.5)  # Normalize G-force to 0-1
         
         # Update recommendation
         if confidence > 0.5:
