@@ -1282,36 +1282,17 @@ class MainWindow(QMainWindow):
         """Update the track map widget with live data."""
         # Initialize track map if needed
         if not self._track_map_initialized and live_data.track:
-            self.track_map_widget.set_sector_count(live_data.sector_count)
-            track_name = live_data.track
-            if live_data.track_config:
-                track_name += f" ({live_data.track_config})"
-            self.track_map_widget.set_track_info(track_name, live_data.track_length)
-            
-            # Load track layout from AC files
-            if self.connector.detector._installation and self.connector.detector._installation.tracks_path:
-                track_id = live_data.track
-                track_config = live_data.track_config
-                tracks_path = self.connector.detector._installation.tracks_path
-                
-                # Try to find track folder
-                if track_config:
-                    track_path = tracks_path / track_id / track_config
-                    if not track_path.exists():
-                        track_path = tracks_path / track_id
-                else:
-                    track_path = tracks_path / track_id
-                
-                if track_path.exists():
-                    self.track_map_widget.set_track_path(track_path)
-            
+            self.track_map_widget.set_track_name(live_data.track, live_data.track_config)
             self._track_map_initialized = True
         
-        # Update car position
-        self.track_map_widget.update_car_position(live_data.normalized_car_position)
+        # Update lap times
+        self.track_map_widget.update_current_lap_time(live_data.current_lap_time_ms)
+        self.track_map_widget.update_best_lap_time(live_data.best_lap_time_ms)
         
-        # Update current sector
-        self.track_map_widget.update_current_sector(live_data.current_sector_index)
+        # Update delta
+        if live_data.best_lap_time_ms > 0 and live_data.current_lap_time_ms > 0:
+            delta = live_data.current_lap_time_ms - live_data.best_lap_time_ms
+            self.track_map_widget.update_delta(delta)
         
         # Check for sector change to record sector time
         if live_data.current_sector_index != self._last_sector_index:
