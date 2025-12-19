@@ -253,6 +253,10 @@ class CarTrackSelector(QWidget):
         """Get currently selected track."""
         return self._selected_track
     
+    def has_valid_selection(self) -> bool:
+        """Check if both car and track are selected."""
+        return self._selected_car is not None and self._selected_track is not None
+    
     def select_car_by_id(self, car_id: str) -> bool:
         """Select car by ID."""
         for i in range(self.car_combo.count()):
