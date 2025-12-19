@@ -130,6 +130,7 @@ class SlidersPanel(QWidget):
     """Panel containing all driver preference sliders - professional design."""
     
     preferences_changed = Signal(dict)
+    profileChanged = Signal()  # For compatibility with main_window
     
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -302,6 +303,7 @@ class SlidersPanel(QWidget):
         """Handle preference change."""
         prefs = self.get_preferences()
         self.preferences_changed.emit(prefs)
+        self.profileChanged.emit()  # For compatibility
     
     def get_preferences(self) -> dict:
         """Get current preference values."""
