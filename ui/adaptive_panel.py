@@ -485,12 +485,9 @@ class AdaptivePanel(QWidget):
         self.learning_stats.update_stats(stats)
         self.performance_comparison.update_comparison(stats)
         
-        # Enable/disable apply button based on confidence
-        if stats.get("has_data", False):
-            confidence = min(stats['total_laps'] / 50.0 * 100, 100)
-            self.apply_button.setEnabled(confidence >= 20)
-        else:
-            self.apply_button.setEnabled(False)
+        # Always enable apply button - conditions-based optimization works without learning data
+        # Learning data just adds extra optimizations on top
+        self.apply_button.setEnabled(True)
     
     def get_conditions(self) -> dict:
         """Get current track conditions."""

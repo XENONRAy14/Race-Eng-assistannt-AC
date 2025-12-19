@@ -752,6 +752,22 @@ class MainWindow(QMainWindow):
         # Update current setup
         self._current_setup = optimized_setup
         
+        # Save to AC
+        success, message, file_path = self.connector.save_setup(
+            setup=optimized_setup,
+            car_id=car.car_id,
+            track_id=track.full_id,
+            overwrite=True
+        )
+        
+        if not success:
+            QMessageBox.warning(
+                self,
+                "Erreur de sauvegarde",
+                f"Le setup n'a pas pu être sauvegardé.\n\n{message}"
+            )
+            return
+        
         # Get performance stats
         stats = self.adaptive_engine.get_performance_stats(car.car_id, track.track_id)
         self.adaptive_panel.update_stats(stats)
