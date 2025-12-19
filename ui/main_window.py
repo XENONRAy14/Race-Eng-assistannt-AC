@@ -1320,14 +1320,6 @@ class MainWindow(QMainWindow):
             self._last_sector_index = live_data.current_sector_index
             print(f"[DEBUG] Now in sector {live_data.current_sector_index}")
         
-        # Update lap times
-        self.track_map_widget.update_lap_times(
-            live_data.current_lap_time,
-            live_data.last_lap_time,
-            live_data.best_lap_time,
-            live_data.completed_laps
-        )
-        
         # Update delta (current vs best)
         if live_data.best_lap_time_ms > 0 and live_data.current_lap_time_ms > 0:
             # Simple delta calculation based on position
