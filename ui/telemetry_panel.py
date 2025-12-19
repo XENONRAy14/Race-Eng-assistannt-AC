@@ -78,7 +78,7 @@ class ModernGaugeWidget(QFrame):
         self.value_label.setStyleSheet("""
             color: #ffffff;
             font-family: 'Arial', sans-serif;
-            font-size: 32px;
+            font-size: 48px;
             font-weight: bold;
         """)
         layout.addWidget(self.value_label)
@@ -89,11 +89,12 @@ class ModernGaugeWidget(QFrame):
         self.unit_label.setStyleSheet("""
             color: #888;
             font-family: 'Arial', sans-serif;
-            font-size: 11px;
+            font-size: 14px;
+            font-weight: bold;
         """)
         layout.addWidget(self.unit_label)
         
-        self.setMinimumSize(120, 110)
+        self.setMinimumSize(180, 140)
     
     def set_value(self, value: float):
         """Update the gauge value."""
@@ -197,7 +198,7 @@ class TireTempsWidget(QFrame):
             name_label.setStyleSheet("""
                 color: #888;
                 font-family: 'Arial', sans-serif;
-                font-size: 10px;
+                font-size: 12px;
                 font-weight: bold;
             """)
             v_layout.addWidget(name_label)
@@ -207,7 +208,7 @@ class TireTempsWidget(QFrame):
             temp_label.setStyleSheet("""
                 color: #ffffff;
                 font-family: 'Arial', sans-serif;
-                font-size: 16px;
+                font-size: 20px;
                 font-weight: bold;
             """)
             v_layout.addWidget(temp_label)

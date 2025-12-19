@@ -79,6 +79,7 @@ class MainWindow(QMainWindow):
         self._tracks_cache: list[Track] = []
         self._last_sector_index: int = -1
         self._track_map_initialized: bool = False
+        self._last_completed_laps: int = 0  # Track lap completion for AI learning
         
         # UI setup
         self._setup_window()
@@ -1196,6 +1197,9 @@ class MainWindow(QMainWindow):
                 # Update track map widget
                 self._update_track_map(live_data)
                 
+                # Record lap data for AI learning
+                self._record_lap_data(live_data)
+                
                 # Check for car/track change
                 if live_data.car_model and live_data.track:
                     if (live_data.car_model != self._last_detected_car or 
@@ -1312,6 +1316,39 @@ class MainWindow(QMainWindow):
             expected_time = int(live_data.normalized_car_position * live_data.best_lap_time_ms)
             delta = live_data.current_lap_time_ms - expected_time
             self.track_map_widget.update_delta(delta)
+    
+    def _record_lap_data(self, live_data) -> None:
+        """Record lap data for AI learning."""
+        # Check if a new lap was completed
+        if live_data.completed_laps > self._last_completed_laps:
+            # New lap completed!
+            lap_time_ms = live_data.last_lap_time_ms
+            
+            if lap_time_ms > 0 and live_data.car_model and live_data.track:
+                # Record the lap
+                self.adaptive_engine.record_lap(
+                    car_id=live_data.car_model,
+                    track_id=live_data.track,
+                    lap_time=lap_time_ms / 1000.0,  # Convert to seconds
+                    conditions=self.current_conditions
+                )
+                
+                # Update adaptive panel stats
+                stats = self.adaptive_engine.get_performance_stats(
+                    live_data.car_model,
+                    live_data.track
+                )
+                self.adaptive_panel.update_stats(stats)
+                
+                # Show feedback in status bar
+                lap_time_str = f"{lap_time_ms / 1000.0:.3f}s"
+                self.statusbar.showMessage(
+                    f"🏁 Tour {live_data.completed_laps} enregistré: {lap_time_str} - IA apprend..."
+                )
+                
+                print(f"[AI LEARNING] Lap {live_data.completed_laps} recorded: {lap_time_str}")
+            
+            self._last_completed_laps = live_data.completed_laps
     
     def _on_quick_start_generate(self) -> None:
         """Handle quick start generate button."""

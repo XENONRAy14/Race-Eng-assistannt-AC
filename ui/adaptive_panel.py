@@ -291,7 +291,7 @@ class PerformanceComparisonWidget(QFrame):
         self.setFrameStyle(QFrame.NoFrame)
         self.setStyleSheet("""
             QFrame {
-                background: rgba(26, 0, 0, 0, 0.3);
+                background: rgba(26, 0, 0, 0.3);
                 border: none;
                 border-radius: 8px;
                 padding: 20px;

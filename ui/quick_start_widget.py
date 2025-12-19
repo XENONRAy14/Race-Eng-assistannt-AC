@@ -7,7 +7,7 @@ from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, 
     QPushButton, QFrame, QProgressBar
 )
-from PySide6.QtCore import Qt, Signal
+from PySide6.QtCore import Qt, Signal, QTimer
 from PySide6.QtGui import QFont
 
 
@@ -21,8 +21,10 @@ class QuickStartWidget(QWidget):
     
     def __init__(self, parent=None):
         super().__init__(parent)
+        self._status = "waiting"
+        self._progress_timer = None
+        self._progress_value = 0
         self._setup_ui()
-        self._status = "waiting"  # waiting, detecting, ready, generating
     
     def _setup_ui(self):
         """Set up the UI."""
@@ -93,7 +95,8 @@ class QuickStartWidget(QWidget):
         
         # Progress bar
         self.progress_bar = QProgressBar()
-        self.progress_bar.setRange(0, 0)  # Indeterminate
+        self.progress_bar.setRange(0, 100)
+        self.progress_bar.setValue(0)
         self.progress_bar.setTextVisible(False)
         self.progress_bar.setFixedHeight(8)
         self.progress_bar.setStyleSheet("""
@@ -244,7 +247,7 @@ class QuickStartWidget(QWidget):
             self.status_label.setText("Détection en cours...")
             self.status_detail.setText("Connexion à Assetto Corsa")
             self.go_button.setEnabled(False)
-            self.progress_bar.show()
+            self._start_progress_animation()
             self.status_card.setStyleSheet("""
                 QFrame {
                     background: rgba(26, 13, 0, 0.5);
@@ -266,7 +269,7 @@ class QuickStartWidget(QWidget):
                 detail += f"🏁 {track}"
             self.status_detail.setText(detail if detail else "Voiture et piste détectées")
             self.go_button.setEnabled(True)
-            self.progress_bar.hide()
+            self._stop_progress_animation()
             self.status_card.setStyleSheet("""
                 QFrame {
                     background: rgba(0, 26, 0, 0.5);
@@ -281,7 +284,7 @@ class QuickStartWidget(QWidget):
             self.status_label.setText("Génération du setup...")
             self.status_detail.setText("Optimisation en cours avec l'IA")
             self.go_button.setEnabled(False)
-            self.progress_bar.show()
+            self._start_progress_animation()
             self.status_card.setStyleSheet("""
                 QFrame {
                     background: rgba(0, 0, 26, 0.5);
@@ -297,7 +300,7 @@ class QuickStartWidget(QWidget):
             self.status_detail.setText("Tu peux maintenant rouler avec ton setup optimisé")
             self.go_button.setEnabled(True)
             self.go_button.setText("⚡ RÉGÉNÉRER")
-            self.progress_bar.hide()
+            self._stop_progress_animation()
             self.status_card.setStyleSheet("""
                 QFrame {
                     background: rgba(0, 26, 0, 0.5);
@@ -306,3 +309,29 @@ class QuickStartWidget(QWidget):
                     padding: 30px;
                 }
             """)
+    
+    def _start_progress_animation(self):
+        """Start animated progress bar."""
+        self.progress_bar.show()
+        self._progress_value = 0
+        self.progress_bar.setValue(0)
+        
+        if self._progress_timer:
+            self._progress_timer.stop()
+        
+        self._progress_timer = QTimer(self)
+        self._progress_timer.timeout.connect(self._update_progress)
+        self._progress_timer.start(50)  # Update every 50ms
+    
+    def _stop_progress_animation(self):
+        """Stop animated progress bar."""
+        if self._progress_timer:
+            self._progress_timer.stop()
+            self._progress_timer = None
+        self.progress_bar.hide()
+        self._progress_value = 0
+    
+    def _update_progress(self):
+        """Update progress bar animation."""
+        self._progress_value = (self._progress_value + 2) % 101
+        self.progress_bar.setValue(self._progress_value)
