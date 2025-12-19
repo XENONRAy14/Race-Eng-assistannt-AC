@@ -209,7 +209,7 @@ class SlidersPanel(QWidget):
         self.aggression_slider = LabeledSlider(
             "Confort", "Agressif",
             50.0,
-            "Balance entre confort et performance"
+            "🎯 AGRESSIVITÉ\n\nConfort (←): Setup doux, suspension souple, conduite facile\nAgressif (→): Setup nerveux, suspension rigide, performance maximale\n\nInfluence: Rigidité suspension, amortisseurs, barres anti-roulis"
         )
         self.aggression_slider.valueChanged.connect(self._on_preferences_changed)
         basic_section.addWidget(self.aggression_slider)
@@ -217,7 +217,7 @@ class SlidersPanel(QWidget):
         self.stability_slider = LabeledSlider(
             "Nerveux", "Stable",
             50.0,
-            "Stabilité vs réactivité"
+            "⚖️ STABILITÉ\n\nNerveux (←): Voiture réactive, changements de direction rapides\nStable (→): Voiture prévisible, facile à contrôler en ligne droite\n\nInfluence: Géométrie suspension, toe, camber, hauteur de caisse"
         )
         self.stability_slider.valueChanged.connect(self._on_preferences_changed)
         basic_section.addWidget(self.stability_slider)
@@ -225,7 +225,7 @@ class SlidersPanel(QWidget):
         self.downforce_slider = LabeledSlider(
             "Vitesse max", "Appui",
             50.0,
-            "Vitesse de pointe vs appui aérodynamique"
+            "🏎️ AÉRODYNAMIQUE\n\nVitesse max (←): Moins d'appui, vitesse de pointe élevée, moins de grip en virage\nAppui (→): Plus d'appui, meilleure tenue de route, vitesse de pointe réduite\n\nInfluence: Aileron avant/arrière, rake (inclinaison voiture)"
         )
         self.downforce_slider.valueChanged.connect(self._on_preferences_changed)
         basic_section.addWidget(self.downforce_slider)
@@ -243,7 +243,7 @@ class SlidersPanel(QWidget):
         self.oversteer_slider = LabeledSlider(
             "Sous-virage", "Sur-virage",
             50.0,
-            "Tendance de la voiture en virage"
+            "🔄 COMPORTEMENT EN VIRAGE\n\nSous-virage (←): L'avant glisse, la voiture ne tourne pas assez\nÉquilibré (50%): Comportement neutre, idéal pour la plupart des circuits\nSur-virage (→): L'arrière glisse, la voiture tourne trop (drift)\n\nInfluence: Répartition des masses, pression pneus, différentiel"
         )
         self.oversteer_slider.valueChanged.connect(self._on_preferences_changed)
         advanced_section.addWidget(self.oversteer_slider)
@@ -251,7 +251,7 @@ class SlidersPanel(QWidget):
         self.brake_bias_slider = LabeledSlider(
             "Arrière", "Avant",
             50.0,
-            "Répartition du freinage"
+            "🛑 RÉPARTITION FREINAGE\n\nArrière (←): Plus de freinage à l'arrière, risque de sur-virage au freinage\nÉquilibré (50%): Freinage équilibré, bon compromis\nAvant (→): Plus de freinage à l'avant, risque de sous-virage, plus stable\n\nInfluence: Balance de frein (brake bias), pression maître-cylindre"
         )
         self.brake_bias_slider.valueChanged.connect(self._on_preferences_changed)
         advanced_section.addWidget(self.brake_bias_slider)
@@ -259,7 +259,7 @@ class SlidersPanel(QWidget):
         self.diff_aggression_slider = LabeledSlider(
             "Ouvert", "Fermé",
             50.0,
-            "Agressivité du différentiel"
+            "⚙️ DIFFÉRENTIEL\n\nOuvert (←): Roues indépendantes, bon en entrée de virage, risque de perte de traction\nÉquilibré (50%): Compromis polyvalent\nFermé (→): Roues liées, meilleure traction en sortie, sous-virage possible\n\nInfluence: Preload, power lock, coast lock du différentiel"
         )
         self.diff_aggression_slider.valueChanged.connect(self._on_preferences_changed)
         advanced_section.addWidget(self.diff_aggression_slider)
