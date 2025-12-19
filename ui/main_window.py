@@ -768,8 +768,8 @@ class MainWindow(QMainWindow):
             )
             return
         
-        # Get performance stats
-        stats = self.adaptive_engine.get_performance_stats(car.car_id, track.track_id)
+        # Get performance stats - use full_id to match what's recorded in _record_lap_data
+        stats = self.adaptive_engine.get_performance_stats(car.car_id, track.full_id)
         self.adaptive_panel.update_stats(stats)
         
         # Show success message
@@ -1353,10 +1353,17 @@ class MainWindow(QMainWindow):
     
     def _record_lap_data(self, live_data) -> None:
         """Record lap data for AI learning."""
+        # Debug: show current state
+        if hasattr(live_data, 'completed_laps') and live_data.completed_laps > 0:
+            if live_data.completed_laps != self._last_completed_laps:
+                print(f"[DEBUG LAP] completed_laps={live_data.completed_laps}, last={self._last_completed_laps}, last_lap_time_ms={live_data.last_lap_time_ms}")
+        
         # Check if a new lap was completed
         if live_data.completed_laps > self._last_completed_laps:
             # New lap completed!
             lap_time_ms = live_data.last_lap_time_ms
+            
+            print(f"[DEBUG LAP] New lap detected! lap_time_ms={lap_time_ms}, car={live_data.car_model}, track={live_data.track}")
             
             if lap_time_ms > 0 and live_data.car_model and live_data.track:
                 # Record the lap
