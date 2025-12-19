@@ -367,23 +367,146 @@ class SetupEngine:
         return setup
     
     def _apply_profile_tuning(self, setup: Setup, profile: DriverProfile) -> Setup:
-        """Apply fine-tuning based on driver profile factors."""
+        """Apply fine-tuning based on driver profile factors.
+        
+        This method applies the user's preferences from the UI sliders to the setup.
+        Each preference affects specific setup parameters.
+        """
         factors = profile.get_all_factors()
         
-        # Experience-based adjustments
+        # ═══════════════════════════════════════════════════════════════
+        # STABILITY vs ROTATION preference
+        # ═══════════════════════════════════════════════════════════════
+        rotation = factors["rotation"]  # 0 = stable, 1 = rotational
+        
+        # More rotation = looser rear, tighter front
+        if rotation > 0.5:
+            # Increase rear toe-out for rotation
+            rear_toe_adj = (rotation - 0.5) * 0.3  # Up to +0.15 degrees
+            for key in ["TOE_LR", "TOE_RR"]:
+                current = setup.get_value("ALIGNMENT", key, 0.1)
+                setup.set_value("ALIGNMENT", key, current + rear_toe_adj)
+            
+            # Softer rear ARB for rotation
+            rear_arb = setup.get_value("ARB", "REAR", 4)
+            setup.set_value("ARB", "REAR", rear_arb * (1.0 - (rotation - 0.5) * 0.3))
+        else:
+            # More stability = stiffer rear
+            stability = factors["stability"]
+            rear_arb = setup.get_value("ARB", "REAR", 4)
+            setup.set_value("ARB", "REAR", rear_arb * (1.0 + stability * 0.2))
+        
+        # ═══════════════════════════════════════════════════════════════
+        # GRIP vs SLIDE preference
+        # ═══════════════════════════════════════════════════════════════
+        slide = factors["slide"]  # 0 = max grip, 1 = allows sliding
+        
+        if slide > 0.5:
+            # More slide = lower tire pressures, less camber
+            pressure_adj = (slide - 0.5) * 2  # Up to -1 psi
+            for key in ["PRESSURE_LF", "PRESSURE_RF", "PRESSURE_LR", "PRESSURE_RR"]:
+                current = setup.get_value("TYRES", key, 26.0)
+                setup.set_value("TYRES", key, current - pressure_adj)
+            
+            # Less aggressive camber for sliding
+            camber_mult = 1.0 - (slide - 0.5) * 0.3
+            for key in ["CAMBER_LF", "CAMBER_RF", "CAMBER_LR", "CAMBER_RR"]:
+                current = setup.get_value("ALIGNMENT", key, -3.0)
+                setup.set_value("ALIGNMENT", key, current * camber_mult)
+        else:
+            # More grip = optimal pressures, more camber
+            grip = factors["grip"]
+            camber_mult = 1.0 + grip * 0.15
+            for key in ["CAMBER_LF", "CAMBER_RF"]:
+                current = setup.get_value("ALIGNMENT", key, -3.0)
+                setup.set_value("ALIGNMENT", key, current * camber_mult)
+        
+        # ═══════════════════════════════════════════════════════════════
+        # AGGRESSION preference
+        # ═══════════════════════════════════════════════════════════════
+        aggression = factors["aggression"]  # 0 = safe, 1 = aggressive
+        
+        # Aggressive = stiffer suspension, more responsive
+        if aggression > 0.5:
+            stiffness_mult = 1.0 + (aggression - 0.5) * 0.3
+            for key in ["SPRING_RATE_LF", "SPRING_RATE_RF", "SPRING_RATE_LR", "SPRING_RATE_RR"]:
+                current = setup.get_value("SUSPENSION", key, 70000)
+                setup.set_value("SUSPENSION", key, int(current * stiffness_mult))
+            
+            # More aggressive diff
+            diff_power = setup.get_value("DIFFERENTIAL", "POWER", 45)
+            setup.set_value("DIFFERENTIAL", "POWER", diff_power * (1.0 + (aggression - 0.5) * 0.4))
+        else:
+            # Safe = softer, more forgiving
+            safety = factors["safety"]
+            diff_power = setup.get_value("DIFFERENTIAL", "POWER", 45)
+            setup.set_value("DIFFERENTIAL", "POWER", diff_power * (1.0 - safety * 0.2))
+        
+        # ═══════════════════════════════════════════════════════════════
+        # DRIFT preference
+        # ═══════════════════════════════════════════════════════════════
+        drift = factors["drift"]  # 0 = grip-oriented, 1 = drift-oriented
+        
+        if drift > 0.3:
+            # Drift setup: locked diff, rear bias, softer rear
+            diff_power = setup.get_value("DIFFERENTIAL", "POWER", 45)
+            setup.set_value("DIFFERENTIAL", "POWER", min(100, diff_power + drift * 40))
+            
+            diff_coast = setup.get_value("DIFFERENTIAL", "COAST", 30)
+            setup.set_value("DIFFERENTIAL", "COAST", min(100, diff_coast + drift * 30))
+            
+            # More rear brake bias for drift initiation
+            brake_bias = setup.get_value("BRAKES", "FRONT_BIAS", 60)
+            setup.set_value("BRAKES", "FRONT_BIAS", brake_bias - drift * 10)
+        
+        # ═══════════════════════════════════════════════════════════════
+        # COMFORT vs PERFORMANCE preference
+        # ═══════════════════════════════════════════════════════════════
+        performance = factors["performance"]  # 0 = comfort, 1 = performance
+        
+        if performance > 0.5:
+            # Performance = stiffer damping, lower ride height
+            damp_mult = 1.0 + (performance - 0.5) * 0.4
+            for key in ["DAMP_BUMP_LF", "DAMP_BUMP_RF", "DAMP_BUMP_LR", "DAMP_BUMP_RR",
+                       "DAMP_REBOUND_LF", "DAMP_REBOUND_RF", "DAMP_REBOUND_LR", "DAMP_REBOUND_RR"]:
+                current = setup.get_value("SUSPENSION", key, 3000)
+                setup.set_value("SUSPENSION", key, int(current * damp_mult))
+            
+            # Lower ride height for performance
+            height_adj = (performance - 0.5) * 10  # Up to -5mm
+            for key in ["RIDE_HEIGHT_LF", "RIDE_HEIGHT_RF", "RIDE_HEIGHT_LR", "RIDE_HEIGHT_RR"]:
+                current = setup.get_value("SUSPENSION", key, 50)
+                setup.set_value("SUSPENSION", key, max(30, current - height_adj))
+        else:
+            # Comfort = softer damping
+            comfort = factors["comfort"]
+            damp_mult = 1.0 - comfort * 0.2
+            for key in ["DAMP_BUMP_LF", "DAMP_BUMP_RF", "DAMP_BUMP_LR", "DAMP_BUMP_RR"]:
+                current = setup.get_value("SUSPENSION", key, 3000)
+                setup.set_value("SUSPENSION", key, int(current * damp_mult))
+        
+        # ═══════════════════════════════════════════════════════════════
+        # EXPERIENCE level adjustments
+        # ═══════════════════════════════════════════════════════════════
         exp_mult = factors["experience"]
         
-        # Beginners get more conservative diff settings
+        # Beginners get more conservative settings
         if exp_mult < 0.7:
+            # Reduce diff lock for beginners
             diff_power = setup.get_value("DIFFERENTIAL", "POWER", 45)
-            setup.set_value("DIFFERENTIAL", "POWER", diff_power * 0.85)
+            setup.set_value("DIFFERENTIAL", "POWER", diff_power * 0.8)
+            
+            # More forgiving camber
+            for key in ["CAMBER_LF", "CAMBER_RF", "CAMBER_LR", "CAMBER_RR"]:
+                current = setup.get_value("ALIGNMENT", key, -3.0)
+                setup.set_value("ALIGNMENT", key, current * 0.8)
         
         # Experts can handle more aggressive settings
-        if exp_mult > 1.0:
+        elif exp_mult > 1.0:
             # Allow more negative camber
             for key in ["CAMBER_LF", "CAMBER_RF"]:
                 current = setup.get_value("ALIGNMENT", key, -3.0)
-                setup.set_value("ALIGNMENT", key, current * 1.1)
+                setup.set_value("ALIGNMENT", key, current * 1.15)
         
         return setup
     
