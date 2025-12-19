@@ -1434,10 +1434,13 @@ class MainWindow(QMainWindow):
         self._current_setup = optimized_setup
         self.repository.save_setup(optimized_setup)
         
-        # Write to AC
-        from assetto.setup_writer import SetupWriter
-        writer = SetupWriter(self.connector.detector.game_path)
-        success = writer.write_setup(optimized_setup)
+        # Write to AC using connector (correct method with all required args)
+        success, message, file_path = self.connector.save_setup(
+            setup=optimized_setup,
+            car_id=car.car_id,
+            track_id=track.full_id,
+            overwrite=True
+        )
         
         if success:
             self.quick_start_widget.set_status("done")
