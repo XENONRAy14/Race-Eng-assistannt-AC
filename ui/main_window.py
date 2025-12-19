@@ -1019,9 +1019,11 @@ class MainWindow(QMainWindow):
         """Handle behavior selection change."""
         self._update_preview()
     
-    def _on_profile_changed(self, profile: DriverProfile) -> None:
+    def _on_profile_changed(self) -> None:
         """Handle profile slider changes."""
-        self._current_profile = profile
+        # Get current preferences from sliders and update profile
+        prefs = self.sliders_panel.get_preferences()
+        # Update recommendation based on new preferences
         self._update_recommendation()
         self._update_preview()
     
@@ -1276,6 +1278,7 @@ class MainWindow(QMainWindow):
     
     def _update_game_status(self, live_data) -> None:
         """Update the game status display."""
+        print("[DEBUG] _update_game_status called!")
         status_text = "🎮 "
         
         if live_data.is_in_pit or live_data.is_in_pit_lane:
@@ -1285,6 +1288,7 @@ class MainWindow(QMainWindow):
             status_text += f"EN PISTE - {live_data.speed_kmh:.0f} km/h"
             self.game_status_label.setStyleSheet("color: #2196F3;")
         
+        print(f"[DEBUG] Setting status text to: {status_text}")
         self.game_status_label.setText(status_text)
     
     def _update_track_map(self, live_data) -> None:
