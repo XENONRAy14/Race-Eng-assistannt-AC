@@ -1237,9 +1237,15 @@ class MainWindow(QMainWindow):
                 self._record_lap_data(live_data)
                 
                 # Check for car/track change
+                print(f"[DEBUG] Checking car/track change:")
+                print(f"[DEBUG]   Current: car='{live_data.car_model}', track='{live_data.track}'")
+                print(f"[DEBUG]   Last: car='{self._last_detected_car}', track='{self._last_detected_track}'")
+                print(f"[DEBUG]   Changed? {live_data.car_model != self._last_detected_car or live_data.track != self._last_detected_track}")
+                
                 if (live_data.car_model != self._last_detected_car or 
                     live_data.track != self._last_detected_track):
                     
+                    print(f"[DEBUG] CAR/TRACK CHANGED! Calling _auto_select_car_track...")
                     self._last_detected_car = live_data.car_model
                     self._last_detected_track = live_data.track
                     
@@ -1253,6 +1259,8 @@ class MainWindow(QMainWindow):
                         live_data.track,
                         live_data.track_config
                     )
+                else:
+                    print(f"[DEBUG] No change detected, skipping auto-select")
             elif live_data.is_connected and live_data.car_model and live_data.track:
                 # Connected, car/track loaded but not in session (menu/loading)
                 self.game_status_label.setText(f"🎮 AC: {live_data.car_model[:20]} @ {live_data.track[:20]}")
