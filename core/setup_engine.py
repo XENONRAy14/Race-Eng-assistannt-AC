@@ -25,7 +25,8 @@ class SetupEngine:
             "PRESSURE_LF": 26.0,
             "PRESSURE_RF": 26.0,
             "PRESSURE_LR": 26.0,
-            "PRESSURE_RR": 26.0
+            "PRESSURE_RR": 26.0,
+            "COMPOUND": 2  # 0=soft, 1=medium, 2=hard (index varies by car)
         },
         "BRAKES": {
             "BIAS": 58.0,
@@ -45,10 +46,22 @@ class SetupEngine:
             "DAMP_REBOUND_RF": 5000,
             "DAMP_REBOUND_LR": 4500,
             "DAMP_REBOUND_RR": 4500,
+            "DAMP_FAST_BUMP_LF": 2000,
+            "DAMP_FAST_BUMP_RF": 2000,
+            "DAMP_FAST_BUMP_LR": 1800,
+            "DAMP_FAST_BUMP_RR": 1800,
+            "DAMP_FAST_REBOUND_LF": 3500,
+            "DAMP_FAST_REBOUND_RF": 3500,
+            "DAMP_FAST_REBOUND_LR": 3200,
+            "DAMP_FAST_REBOUND_RR": 3200,
             "RIDE_HEIGHT_LF": 50,
             "RIDE_HEIGHT_RF": 50,
             "RIDE_HEIGHT_LR": 55,
-            "RIDE_HEIGHT_RR": 55
+            "RIDE_HEIGHT_RR": 55,
+            "PACKER_LF": 0,
+            "PACKER_RF": 0,
+            "PACKER_LR": 0,
+            "PACKER_RR": 0
         },
         "DIFFERENTIAL": {
             "POWER": 45.0,
@@ -63,11 +76,15 @@ class SetupEngine:
             "TOE_LF": 0.0,
             "TOE_RF": 0.0,
             "TOE_LR": 0.1,
-            "TOE_RR": 0.1
+            "TOE_RR": 0.1,
+            "CASTER_LF": 0.0,
+            "CASTER_RF": 0.0
         },
         "AERO": {
             "WING_FRONT": 0,
-            "WING_REAR": 0
+            "WING_REAR": 0,
+            "SPLITTER": 0,
+            "REAR_WING": 0
         },
         "FUEL": {
             "FUEL": 30
@@ -75,6 +92,17 @@ class SetupEngine:
         "ARB": {
             "FRONT": 5,
             "REAR": 4
+        },
+        "ELECTRONICS": {
+            "TC": 5,           # Traction Control (0-12 typically)
+            "ABS": 3,          # ABS level (0-12 typically)
+            "ENGINE_MAP": 1,   # Engine map (power mode)
+            "MGU_K_DELIVERY": 0,  # For hybrid cars
+            "MGU_K_RECOVERY": 0   # For hybrid cars
+        },
+        "ENGINE": {
+            "ENGINE_LIMITER": 0,   # Engine braking
+            "TURBO_BOOST": 0       # Turbo boost level
         }
     }
     
@@ -84,7 +112,8 @@ class SetupEngine:
             "PRESSURE_LF": (20.0, 35.0),
             "PRESSURE_RF": (20.0, 35.0),
             "PRESSURE_LR": (20.0, 35.0),
-            "PRESSURE_RR": (20.0, 35.0)
+            "PRESSURE_RR": (20.0, 35.0),
+            "COMPOUND": (0, 10)  # Varies by car
         },
         "BRAKES": {
             "BIAS": (40.0, 80.0),
@@ -107,7 +136,19 @@ class SetupEngine:
             "RIDE_HEIGHT_LF": (30, 80),
             "RIDE_HEIGHT_RF": (30, 80),
             "RIDE_HEIGHT_LR": (35, 85),
-            "RIDE_HEIGHT_RR": (35, 85)
+            "RIDE_HEIGHT_RR": (35, 85),
+            "DAMP_FAST_BUMP_LF": (500, 6000),
+            "DAMP_FAST_BUMP_RF": (500, 6000),
+            "DAMP_FAST_BUMP_LR": (500, 6000),
+            "DAMP_FAST_BUMP_RR": (500, 6000),
+            "DAMP_FAST_REBOUND_LF": (1000, 10000),
+            "DAMP_FAST_REBOUND_RF": (1000, 10000),
+            "DAMP_FAST_REBOUND_LR": (1000, 10000),
+            "DAMP_FAST_REBOUND_RR": (1000, 10000),
+            "PACKER_LF": (0, 30),
+            "PACKER_RF": (0, 30),
+            "PACKER_LR": (0, 30),
+            "PACKER_RR": (0, 30)
         },
         "DIFFERENTIAL": {
             "POWER": (0.0, 100.0),
@@ -122,11 +163,15 @@ class SetupEngine:
             "TOE_LF": (-0.5, 0.5),
             "TOE_RF": (-0.5, 0.5),
             "TOE_LR": (-0.3, 0.5),
-            "TOE_RR": (-0.3, 0.5)
+            "TOE_RR": (-0.3, 0.5),
+            "CASTER_LF": (-2.0, 10.0),
+            "CASTER_RF": (-2.0, 10.0)
         },
         "AERO": {
             "WING_FRONT": (0, 20),
-            "WING_REAR": (0, 20)
+            "WING_REAR": (0, 20),
+            "SPLITTER": (0, 10),
+            "REAR_WING": (0, 20)
         },
         "FUEL": {
             "FUEL": (5, 100)
@@ -134,6 +179,17 @@ class SetupEngine:
         "ARB": {
             "FRONT": (0, 10),
             "REAR": (0, 10)
+        },
+        "ELECTRONICS": {
+            "TC": (0, 12),
+            "ABS": (0, 12),
+            "ENGINE_MAP": (0, 10),
+            "MGU_K_DELIVERY": (0, 10),
+            "MGU_K_RECOVERY": (0, 10)
+        },
+        "ENGINE": {
+            "ENGINE_LIMITER": (0, 10),
+            "TURBO_BOOST": (0, 10)
         }
     }
     
@@ -288,6 +344,33 @@ class SetupEngine:
             for key in ["PRESSURE_LF", "PRESSURE_RF", "PRESSURE_LR", "PRESSURE_RR"]:
                 current = setup.get_value("TYRES", key, 26.0)
                 setup.set_value("TYRES", key, current + adjustment)
+        
+        # Fast dampers (follow regular damper adjustments)
+        if behavior.suspension_damping != 0:
+            multiplier = 1.0 + (behavior.suspension_damping * 0.15)
+            for key in ["DAMP_FAST_BUMP_LF", "DAMP_FAST_BUMP_RF", "DAMP_FAST_BUMP_LR", "DAMP_FAST_BUMP_RR",
+                       "DAMP_FAST_REBOUND_LF", "DAMP_FAST_REBOUND_RF", "DAMP_FAST_REBOUND_LR", "DAMP_FAST_REBOUND_RR"]:
+                current = setup.get_value("SUSPENSION", key, 2000)
+                setup.set_value("SUSPENSION", key, int(current * multiplier))
+        
+        # Aero - wing adjustments based on downforce preference
+        if hasattr(behavior, 'aero_downforce') and behavior.aero_downforce != 0:
+            adjustment = int(behavior.aero_downforce * 5)
+            for key in ["WING_FRONT", "WING_REAR", "SPLITTER", "REAR_WING"]:
+                current = setup.get_value("AERO", key, 0)
+                setup.set_value("AERO", key, max(0, current + adjustment))
+        
+        # Electronics - TC/ABS based on behavior aggressiveness
+        # More aggressive = less TC/ABS, more conservative = more TC/ABS
+        if hasattr(behavior, 'stability') and behavior.stability != 0:
+            tc_adj = int(behavior.stability * 3)  # -3 to +3
+            abs_adj = int(behavior.stability * 2)  # -2 to +2
+            
+            current_tc = setup.get_value("ELECTRONICS", "TC", 5)
+            current_abs = setup.get_value("ELECTRONICS", "ABS", 3)
+            
+            setup.set_value("ELECTRONICS", "TC", max(0, min(12, current_tc + tc_adj)))
+            setup.set_value("ELECTRONICS", "ABS", max(0, min(12, current_abs + abs_adj)))
         
         return setup
     
@@ -507,6 +590,37 @@ class SetupEngine:
             for key in ["CAMBER_LF", "CAMBER_RF"]:
                 current = setup.get_value("ALIGNMENT", key, -3.0)
                 setup.set_value("ALIGNMENT", key, current * 1.15)
+        
+        # ═══════════════════════════════════════════════════════════════
+        # ELECTRONICS adjustments based on experience
+        # ═══════════════════════════════════════════════════════════════
+        # Beginners get more TC/ABS, experts get less
+        if exp_mult < 0.7:
+            # More assists for beginners
+            current_tc = setup.get_value("ELECTRONICS", "TC", 5)
+            current_abs = setup.get_value("ELECTRONICS", "ABS", 3)
+            setup.set_value("ELECTRONICS", "TC", min(12, current_tc + 3))
+            setup.set_value("ELECTRONICS", "ABS", min(12, current_abs + 2))
+        elif exp_mult > 1.0:
+            # Less assists for experts
+            current_tc = setup.get_value("ELECTRONICS", "TC", 5)
+            current_abs = setup.get_value("ELECTRONICS", "ABS", 3)
+            setup.set_value("ELECTRONICS", "TC", max(0, current_tc - 2))
+            setup.set_value("ELECTRONICS", "ABS", max(0, current_abs - 1))
+        
+        # ═══════════════════════════════════════════════════════════════
+        # AERO adjustments based on aggression/performance
+        # ═══════════════════════════════════════════════════════════════
+        if aggression > 0.6:
+            # More aggressive = less downforce for speed
+            for key in ["WING_FRONT", "WING_REAR", "REAR_WING"]:
+                current = setup.get_value("AERO", key, 5)
+                setup.set_value("AERO", key, max(0, int(current * 0.8)))
+        elif factors.get("safety", 0) > 0.6:
+            # More safety = more downforce for stability
+            for key in ["WING_FRONT", "WING_REAR", "REAR_WING"]:
+                current = setup.get_value("AERO", key, 5)
+                setup.set_value("AERO", key, min(20, int(current * 1.2)))
         
         return setup
     
