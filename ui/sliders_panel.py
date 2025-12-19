@@ -364,3 +364,12 @@ class SlidersPanel(QWidget):
         profile.oversteer_tendency = self.oversteer_slider.get_value() / 100.0
         profile.brake_bias = self.brake_bias_slider.get_value() / 100.0
         profile.diff_aggression = self.diff_aggression_slider.get_value() / 100.0
+    
+    def reset_to_defaults(self) -> None:
+        """Reset all sliders to default values (50%)."""
+        self.aggression_slider.set_value(50.0)
+        self.stability_slider.set_value(50.0)
+        self.downforce_slider.set_value(50.0)
+        self.oversteer_slider.set_value(50.0)
+        self.brake_bias_slider.set_value(50.0)
+        self.diff_aggression_slider.set_value(50.0)

@@ -830,7 +830,8 @@ class MainWindow(QMainWindow):
                 
                 # Update driving style widget if we got new analysis
                 if metrics:
-                    self.driving_style_widget.update_metrics(metrics)
+                    style, confidence = self.driving_analyzer.analyze_style(metrics)
+                    self.driving_style_widget.update_analysis(metrics, style, confidence)
         except Exception:
             pass
     
@@ -1013,7 +1014,7 @@ class MainWindow(QMainWindow):
         
         # Update presets panel with selected car
         if car:
-            self.presets_panel.set_current_car(car.car_id, car.name)
+            self.presets_panel.set_current_car(car.car_id)
     
     def _on_behavior_changed(self, behavior_id: str) -> None:
         """Handle behavior selection change."""

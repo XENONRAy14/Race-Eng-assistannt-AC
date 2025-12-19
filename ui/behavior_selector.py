@@ -221,6 +221,10 @@ class BehaviorSelector(QWidget):
         if behavior_id in self._cards:
             self._update_selection(behavior_id)
     
+    def set_behavior(self, behavior_id: str) -> None:
+        """Set the selected behavior (alias for set_selected_behavior)."""
+        self.set_selected_behavior(behavior_id)
+    
     def set_recommendation(self, behavior_id: str, confidence: float) -> None:
         """Show AI recommendation."""
         if behavior_id in self.BEHAVIORS:
