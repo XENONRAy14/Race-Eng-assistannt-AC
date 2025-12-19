@@ -300,6 +300,20 @@ class LearningStatsWidget(QFrame):
             }
         """)
         layout.addWidget(self.confidence_bar)
+        
+        # AI Status label - shows thinking progress
+        self.status_label = QLabel("🔄 En attente de données...")
+        self.status_label.setStyleSheet("""
+            color: #ffaa00;
+            font-size: 11px;
+            font-style: italic;
+            margin-top: 8px;
+            padding: 8px;
+            background: rgba(255, 170, 0, 0.1);
+            border-radius: 4px;
+        """)
+        self.status_label.setWordWrap(True)
+        layout.addWidget(self.status_label)
     
     def update_stats(self, stats: dict):
         """Update displayed statistics."""
@@ -308,15 +322,72 @@ class LearningStatsWidget(QFrame):
             self.best_time_value.setText("--")
             self.consistency_value.setText("--")
             self.confidence_bar.setValue(0)
+            self.status_label.setText("🔄 En attente de données... Roule quelques tours!")
+            self.status_label.setStyleSheet("""
+                color: #ffaa00;
+                font-size: 11px;
+                font-style: italic;
+                margin-top: 8px;
+                padding: 8px;
+                background: rgba(255, 170, 0, 0.1);
+                border-radius: 4px;
+            """)
             return
         
-        self.laps_value.setText(str(stats['total_laps']))
+        total_laps = stats['total_laps']
+        self.laps_value.setText(str(total_laps))
         self.best_time_value.setText(f"{stats['your_best']:.3f}s")
         self.consistency_value.setText(f"±{stats['consistency']:.3f}s")
         
         # Calculate confidence (0-100%)
-        confidence = min(stats['total_laps'] / 50.0 * 100, 100)
+        confidence = min(total_laps / 50.0 * 100, 100)
         self.confidence_bar.setValue(int(confidence))
+        
+        # Update status message based on learning progress
+        if total_laps < 3:
+            self.status_label.setText(f"🧠 IA analyse... ({total_laps}/3 tours minimum)")
+            self.status_label.setStyleSheet("""
+                color: #ffaa00;
+                font-size: 11px;
+                font-style: italic;
+                margin-top: 8px;
+                padding: 8px;
+                background: rgba(255, 170, 0, 0.1);
+                border-radius: 4px;
+            """)
+        elif total_laps < 10:
+            self.status_label.setText(f"🔍 IA apprend ton style... ({total_laps} tours)")
+            self.status_label.setStyleSheet("""
+                color: #00aaff;
+                font-size: 11px;
+                font-style: italic;
+                margin-top: 8px;
+                padding: 8px;
+                background: rgba(0, 170, 255, 0.1);
+                border-radius: 4px;
+            """)
+        elif total_laps < 25:
+            self.status_label.setText(f"⚡ IA optimise le setup... ({total_laps} tours, {confidence:.0f}% confiance)")
+            self.status_label.setStyleSheet("""
+                color: #00ff88;
+                font-size: 11px;
+                font-style: italic;
+                margin-top: 8px;
+                padding: 8px;
+                background: rgba(0, 255, 136, 0.1);
+                border-radius: 4px;
+            """)
+        else:
+            self.status_label.setText(f"✅ IA prête! {total_laps} tours analysés ({confidence:.0f}% confiance)")
+            self.status_label.setStyleSheet("""
+                color: #00ff00;
+                font-size: 11px;
+                font-weight: bold;
+                margin-top: 8px;
+                padding: 8px;
+                background: rgba(0, 255, 0, 0.15);
+                border-radius: 4px;
+            """)
 
 
 class PerformanceComparisonWidget(QFrame):

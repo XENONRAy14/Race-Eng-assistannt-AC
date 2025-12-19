@@ -1374,13 +1374,25 @@ class MainWindow(QMainWindow):
                 )
                 self.adaptive_panel.update_stats(stats)
                 
-                # Show feedback in status bar
+                # Show feedback in status bar with AI progress
                 lap_time_str = f"{lap_time_ms / 1000.0:.3f}s"
+                total_laps = stats.get('total_laps', 1)
+                confidence = min(total_laps / 50.0 * 100, 100)
+                
+                if total_laps < 3:
+                    ai_status = f"🧠 IA analyse... ({total_laps}/3 tours min)"
+                elif total_laps < 10:
+                    ai_status = f"🔍 IA apprend ({total_laps} tours)"
+                elif total_laps < 25:
+                    ai_status = f"⚡ IA optimise ({confidence:.0f}% confiance)"
+                else:
+                    ai_status = f"✅ IA prête ({confidence:.0f}% confiance)"
+                
                 self.statusbar.showMessage(
-                    f"🏁 Tour {live_data.completed_laps} enregistré: {lap_time_str} - IA apprend..."
+                    f"🏁 Tour {live_data.completed_laps}: {lap_time_str} | {ai_status}"
                 )
                 
-                print(f"[AI LEARNING] Lap {live_data.completed_laps} recorded: {lap_time_str}")
+                print(f"[AI LEARNING] Lap {live_data.completed_laps} recorded: {lap_time_str} | Confidence: {confidence:.0f}%")
             
             self._last_completed_laps = live_data.completed_laps
     
