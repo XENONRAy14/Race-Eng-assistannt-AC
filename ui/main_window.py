@@ -21,8 +21,8 @@ from ui.behavior_selector import BehaviorSelector
 from ui.sliders_panel_v2 import SlidersPanel
 from ui.telemetry_panel_v2 import TelemetryPanel, TelemetryData
 from ui.presets_panel import PresetsPanel
-from ui.driving_style_widget import DrivingStyleWidget
-from ui.track_map_widget import TrackMapWidget
+from ui.driving_style_widget_v2 import DrivingStyleWidget
+from ui.track_map_widget_v2 import TrackMapWidget
 
 from models.driver_profile import DriverProfile
 from models.setup import Setup
@@ -566,91 +566,96 @@ class MainWindow(QMainWindow):
     def _create_setup_preview_tab(self) -> QWidget:
         """Create the setup preview tab content."""
         tab = QWidget()
+        tab.setStyleSheet("background: #0a0a0a;")
         layout = QVBoxLayout(tab)
-        layout.setContentsMargins(10, 10, 10, 10)
+        layout.setContentsMargins(40, 30, 40, 30)
+        layout.setSpacing(25)
         
         # Score display
-        score_group = QGroupBox("Score IA")
-        score_group.setStyleSheet("""
-            QGroupBox {
-                font-weight: bold;
-                border: 1px solid #444;
-                border-radius: 5px;
-                margin-top: 10px;
-                padding-top: 10px;
+        score_section = QFrame()
+        score_section.setStyleSheet("""
+            QFrame {
+                background: rgba(255, 255, 255, 0.02);
+                border: none;
+                border-left: 3px solid #ff0000;
+                padding: 25px 30px;
             }
         """)
-        score_layout = QVBoxLayout(score_group)
+        score_layout = QVBoxLayout(score_section)
+        score_layout.setSpacing(10)
+        
+        score_title = QLabel("AI SCORE")
+        score_title.setStyleSheet("""
+            color: #666666;
+            font-size: 11px;
+            font-weight: bold;
+            letter-spacing: 2px;
+        """)
+        score_layout.addWidget(score_title)
         
         self.score_label = QLabel("--/100")
-        self.score_label.setFont(QFont("Segoe UI", 24, QFont.Bold))
+        self.score_label.setFont(QFont("Consolas", 32, QFont.Bold))
         self.score_label.setAlignment(Qt.AlignCenter)
-        self.score_label.setStyleSheet("color: #2196F3;")
+        self.score_label.setStyleSheet("color: #ffffff;")
         score_layout.addWidget(self.score_label)
         
         self.confidence_label = QLabel("Confiance: --%")
         self.confidence_label.setAlignment(Qt.AlignCenter)
-        self.confidence_label.setStyleSheet("color: #888;")
+        self.confidence_label.setStyleSheet("color: #999999; font-size: 13px;")
         score_layout.addWidget(self.confidence_label)
         
-        layout.addWidget(score_group)
+        layout.addWidget(score_section)
         
         # Setup preview
-        preview_group = QGroupBox("Valeurs clés")
-        preview_group.setStyleSheet("""
-            QGroupBox {
-                font-weight: bold;
-                border: 1px solid #444;
-                border-radius: 5px;
-                margin-top: 10px;
-                padding-top: 10px;
-            }
+        preview_title = QLabel("KEY VALUES")
+        preview_title.setStyleSheet("""
+            color: #666666;
+            font-size: 11px;
+            font-weight: bold;
+            letter-spacing: 2px;
         """)
-        preview_layout = QVBoxLayout(preview_group)
+        layout.addWidget(preview_title)
         
         self.preview_text = QTextEdit()
         self.preview_text.setReadOnly(True)
         self.preview_text.setStyleSheet("""
             QTextEdit {
-                background-color: #2a2a2a;
-                color: #fff;
+                background-color: rgba(255, 255, 255, 0.02);
+                color: #ffffff;
                 border: none;
+                border-left: 3px solid #666666;
                 font-family: Consolas, monospace;
-                font-size: 11px;
+                font-size: 12px;
+                padding: 15px;
             }
         """)
         self.preview_text.setMaximumHeight(200)
-        preview_layout.addWidget(self.preview_text)
-        
-        layout.addWidget(preview_group)
+        layout.addWidget(self.preview_text)
         
         # AI Notes
-        notes_group = QGroupBox("Notes IA")
-        notes_group.setStyleSheet("""
-            QGroupBox {
-                font-weight: bold;
-                border: 1px solid #444;
-                border-radius: 5px;
-                margin-top: 10px;
-                padding-top: 10px;
-            }
+        notes_title = QLabel("AI NOTES")
+        notes_title.setStyleSheet("""
+            color: #666666;
+            font-size: 11px;
+            font-weight: bold;
+            letter-spacing: 2px;
         """)
-        notes_layout = QVBoxLayout(notes_group)
+        layout.addWidget(notes_title)
         
         self.notes_text = QTextEdit()
         self.notes_text.setReadOnly(True)
         self.notes_text.setStyleSheet("""
             QTextEdit {
-                background-color: #2a2a2a;
-                color: #888;
+                background-color: rgba(255, 255, 255, 0.02);
+                color: #999999;
                 border: none;
-                font-size: 11px;
+                border-left: 3px solid #666666;
+                font-size: 12px;
+                padding: 15px;
             }
         """)
         self.notes_text.setMaximumHeight(120)
-        notes_layout.addWidget(self.notes_text)
-        
-        layout.addWidget(notes_group)
+        layout.addWidget(self.notes_text)
         
         layout.addStretch()
         
