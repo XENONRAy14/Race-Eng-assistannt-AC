@@ -33,22 +33,23 @@ class QuickStartWidget(QWidget):
         layout.setSpacing(25)
         
         # Title
-        title = QLabel("🚀 Démarrage Rapide")
+        title = QLabel("QUICK START")
         title.setStyleSheet("""
             color: #ff0000;
-            font-size: 32px;
+            font-size: 16px;
             font-weight: bold;
-            margin-bottom: 20px;
+            letter-spacing: 4px;
+            margin-bottom: 15px;
         """)
         title.setAlignment(Qt.AlignCenter)
         layout.addWidget(title)
         
         # Subtitle
-        subtitle = QLabel("Lance Assetto Corsa et l'assistant fera le reste !")
+        subtitle = QLabel("Lance Assetto Corsa et l'assistant fera le reste")
         subtitle.setStyleSheet("""
-            color: #cccccc;
-            font-size: 16px;
-            margin-bottom: 30px;
+            color: #999999;
+            font-size: 14px;
+            margin-bottom: 25px;
         """)
         subtitle.setAlignment(Qt.AlignCenter)
         subtitle.setWordWrap(True)
@@ -58,10 +59,11 @@ class QuickStartWidget(QWidget):
         self.status_card = QFrame()
         self.status_card.setStyleSheet("""
             QFrame {
-                background: rgba(26, 0, 0, 0.5);
-                border: 2px solid #ff0000;
-                border-radius: 12px;
-                padding: 30px;
+                background: rgba(255, 255, 255, 0.03);
+                border: none;
+                border-left: 4px solid #ff0000;
+                border-radius: 0px;
+                padding: 40px;
             }
         """)
         
@@ -70,14 +72,14 @@ class QuickStartWidget(QWidget):
         
         # Status icon and text
         self.status_icon = QLabel("⏳")
-        self.status_icon.setStyleSheet("font-size: 64px;")
+        self.status_icon.setStyleSheet("font-size: 56px;")
         self.status_icon.setAlignment(Qt.AlignCenter)
         status_layout.addWidget(self.status_icon)
         
         self.status_label = QLabel("En attente d'Assetto Corsa...")
         self.status_label.setStyleSheet("""
             color: #ffffff;
-            font-size: 20px;
+            font-size: 18px;
             font-weight: bold;
         """)
         self.status_label.setAlignment(Qt.AlignCenter)
@@ -86,8 +88,8 @@ class QuickStartWidget(QWidget):
         
         self.status_detail = QLabel("Lance le jeu et sélectionne une voiture et une piste")
         self.status_detail.setStyleSheet("""
-            color: #888888;
-            font-size: 14px;
+            color: #999999;
+            font-size: 13px;
         """)
         self.status_detail.setAlignment(Qt.AlignCenter)
         self.status_detail.setWordWrap(True)
@@ -116,19 +118,19 @@ class QuickStartWidget(QWidget):
         layout.addWidget(self.status_card)
         
         # Big GO button
-        self.go_button = QPushButton("⚡ GÉNÉRER MON SETUP")
+        self.go_button = QPushButton("⚡ GENERATE SETUP")
         self.go_button.clicked.connect(self.generate_auto_setup.emit)
-        self.go_button.setMinimumHeight(80)
+        self.go_button.setMinimumHeight(60)
         self.go_button.setEnabled(False)
         self.go_button.setStyleSheet("""
             QPushButton {
-                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                    stop:0 #666666, stop:1 #444444);
-                color: #888888;
+                background: #333333;
+                color: #666666;
                 border: none;
-                border-radius: 12px;
-                font-size: 24px;
+                border-radius: 6px;
+                font-size: 16px;
                 font-weight: bold;
+                letter-spacing: 2px;
                 padding: 20px;
             }
             QPushButton:enabled {
@@ -235,10 +237,11 @@ class QuickStartWidget(QWidget):
             self.progress_bar.hide()
             self.status_card.setStyleSheet("""
                 QFrame {
-                    background: rgba(26, 0, 0, 0.5);
-                    border: 2px solid #ff0000;
-                    border-radius: 12px;
-                    padding: 30px;
+                    background: rgba(255, 255, 255, 0.03);
+                    border: none;
+                    border-left: 4px solid #ff0000;
+                    border-radius: 0px;
+                    padding: 40px;
                 }
             """)
         
@@ -250,10 +253,11 @@ class QuickStartWidget(QWidget):
             self._start_progress_animation()
             self.status_card.setStyleSheet("""
                 QFrame {
-                    background: rgba(26, 13, 0, 0.5);
-                    border: 2px solid #ff8800;
-                    border-radius: 12px;
-                    padding: 30px;
+                    background: rgba(255, 255, 255, 0.03);
+                    border: none;
+                    border-left: 4px solid #ff8800;
+                    border-radius: 0px;
+                    padding: 40px;
                 }
             """)
         
@@ -272,10 +276,11 @@ class QuickStartWidget(QWidget):
             self._stop_progress_animation()
             self.status_card.setStyleSheet("""
                 QFrame {
-                    background: rgba(0, 26, 0, 0.5);
-                    border: 2px solid #00ff00;
-                    border-radius: 12px;
-                    padding: 30px;
+                    background: rgba(255, 255, 255, 0.03);
+                    border: none;
+                    border-left: 4px solid #00ff00;
+                    border-radius: 0px;
+                    padding: 40px;
                 }
             """)
         
@@ -287,10 +292,11 @@ class QuickStartWidget(QWidget):
             self._start_progress_animation()
             self.status_card.setStyleSheet("""
                 QFrame {
-                    background: rgba(0, 0, 26, 0.5);
-                    border: 2px solid #0088ff;
-                    border-radius: 12px;
-                    padding: 30px;
+                    background: rgba(255, 255, 255, 0.03);
+                    border: none;
+                    border-left: 4px solid #0088ff;
+                    border-radius: 0px;
+                    padding: 40px;
                 }
             """)
         
@@ -303,10 +309,11 @@ class QuickStartWidget(QWidget):
             self._stop_progress_animation()
             self.status_card.setStyleSheet("""
                 QFrame {
-                    background: rgba(0, 26, 0, 0.5);
-                    border: 2px solid #00ff00;
-                    border-radius: 12px;
-                    padding: 30px;
+                    background: rgba(255, 255, 255, 0.03);
+                    border: none;
+                    border-left: 4px solid #00ff00;
+                    border-radius: 0px;
+                    padding: 40px;
                 }
             """)
     

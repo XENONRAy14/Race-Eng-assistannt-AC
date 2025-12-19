@@ -19,7 +19,7 @@ from pathlib import Path
 from ui.car_track_selector import CarTrackSelector
 from ui.behavior_selector import BehaviorSelector
 from ui.sliders_panel import SlidersPanel
-from ui.telemetry_panel import TelemetryPanel, TelemetryData
+from ui.telemetry_panel_v2 import TelemetryPanel, TelemetryData
 from ui.presets_panel import PresetsPanel
 from ui.driving_style_widget import DrivingStyleWidget
 from ui.track_map_widget import TrackMapWidget
@@ -545,9 +545,9 @@ class MainWindow(QMainWindow):
         self.right_tabs.addTab(self.presets_panel, "⭐ Presets")
         
         # Tab 6: Adaptive IA
-        from ui.adaptive_panel import AdaptivePanel
+        from ui.adaptive_panel_v2 import AdaptivePanel
         self.adaptive_panel = AdaptivePanel()
-        self.adaptive_panel.apply_adaptive.connect(self._on_apply_adaptive)
+        self.adaptive_panel.apply_optimization.connect(self._on_apply_adaptive)
         self.right_tabs.addTab(self.adaptive_panel, "🤖 IA Adaptive")
         
         layout.addWidget(self.right_tabs)

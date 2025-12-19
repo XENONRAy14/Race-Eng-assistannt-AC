@@ -36,20 +36,21 @@ class ConditionsWidget(QFrame):
         layout.setSpacing(15)
         
         # Title
-        title = QLabel("🌡️ Conditions de Piste")
+        title = QLabel("CONDITIONS")
         title.setStyleSheet("""
             color: #ff0000;
-            font-size: 18px;
+            font-size: 13px;
             font-weight: bold;
+            letter-spacing: 2px;
             margin-bottom: 10px;
         """)
         layout.addWidget(title)
         
         # Temperature slider
         temp_layout = QHBoxLayout()
-        temp_label = QLabel("Température:")
-        temp_label.setStyleSheet("color: #ffffff; font-size: 14px;")
-        temp_label.setFixedWidth(120)
+        temp_label = QLabel("Air Temp")
+        temp_label.setStyleSheet("color: #999999; font-size: 12px;")
+        temp_label.setFixedWidth(100)
         temp_layout.addWidget(temp_label)
         
         self.temp_slider = QSlider(Qt.Horizontal)
@@ -81,9 +82,9 @@ class ConditionsWidget(QFrame):
         
         # Track temperature slider
         track_temp_layout = QHBoxLayout()
-        track_temp_label = QLabel("Temp. Piste:")
-        track_temp_label.setStyleSheet("color: #ffffff; font-size: 14px;")
-        track_temp_label.setFixedWidth(120)
+        track_temp_label = QLabel("Track Temp")
+        track_temp_label.setStyleSheet("color: #999999; font-size: 12px;")
+        track_temp_label.setFixedWidth(100)
         track_temp_layout.addWidget(track_temp_label)
         
         self.track_temp_slider = QSlider(Qt.Horizontal)
@@ -115,9 +116,9 @@ class ConditionsWidget(QFrame):
         
         # Weather selector
         weather_layout = QHBoxLayout()
-        weather_label = QLabel("Météo:")
-        weather_label.setStyleSheet("color: #ffffff; font-size: 14px;")
-        weather_label.setFixedWidth(120)
+        weather_label = QLabel("Weather")
+        weather_label.setStyleSheet("color: #999999; font-size: 12px;")
+        weather_label.setFixedWidth(100)
         weather_layout.addWidget(weather_label)
         
         self.weather_combo = QComboBox()
