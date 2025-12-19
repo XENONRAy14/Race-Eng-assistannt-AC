@@ -1457,8 +1457,13 @@ class MainWindow(QMainWindow):
     
     def _auto_select_car_track(self, car_model: str, track: str, track_config: str) -> None:
         """Auto-select car and track in the UI based on live detection."""
+        print(f"[DEBUG] _auto_select_car_track called: car={car_model}, track={track}, config={track_config}")
+        
         cars = self._cars_cache if self._cars_cache else self.connector.get_cars()
         tracks = self._tracks_cache if self._tracks_cache else self.connector.get_tracks()
+        
+        print(f"[DEBUG] Cars cache: {len(cars) if cars else 0} cars")
+        print(f"[DEBUG] Tracks cache: {len(tracks) if tracks else 0} tracks")
 
         # If scans are empty, inject fallback entries so selection becomes possible
         if not cars:
@@ -1473,38 +1478,52 @@ class MainWindow(QMainWindow):
 
         # Find and select car
         car_found = False
+        print(f"[DEBUG] Searching for car: {car_model}")
         for car in cars:
             if car.car_id == car_model or car_model in car.car_id:
+                print(f"[DEBUG] Car found! Setting: {car.car_id}")
                 self.car_track_selector.set_selected_car(car.car_id)
                 car_found = True
                 break
 
         if not car_found:
             # Add fallback car if not found
+            print(f"[DEBUG] Car not found in cache, adding fallback: {car_model}")
             fallback_car = Car(car_id=car_model, name=car_model)
+            if not self._cars_cache:
+                self._cars_cache = []
             self._cars_cache.append(fallback_car)
             self.car_track_selector.set_cars(self._cars_cache)
             self.car_track_selector.set_selected_car(fallback_car.car_id)
             car_found = True
+            print(f"[DEBUG] Fallback car added and selected")
 
         # Find and select track
         track_found = False
+        print(f"[DEBUG] Searching for track: {track}")
         for t in tracks:
             if t.track_id == track or track in t.track_id:
+                print(f"[DEBUG] Track found! Setting: {t.track_id}")
                 self.car_track_selector.set_selected_track(t.track_id, track_config)
                 track_found = True
                 break
 
         if not track_found:
             # Add fallback track if not found
+            print(f"[DEBUG] Track not found in cache, adding fallback: {track}")
             fallback_track = Track(track_id=track, name=track, config=track_config)
+            if not self._tracks_cache:
+                self._tracks_cache = []
             self._tracks_cache.append(fallback_track)
             self.car_track_selector.set_tracks(self._tracks_cache)
             self.car_track_selector.set_selected_track(fallback_track.track_id, track_config)
             track_found = True
+            print(f"[DEBUG] Fallback track added and selected")
         
         # Notify user and update Quick Start widget
+        print(f"[DEBUG] car_found={car_found}, track_found={track_found}")
         if car_found and track_found:
+            print(f"[DEBUG] Both found! Updating UI...")
             self.statusbar.showMessage(
                 f"🎯 Détection auto: {car_model} sur {track}"
             )
@@ -1513,16 +1532,24 @@ class MainWindow(QMainWindow):
             # Update Quick Start widget to ready state
             car_obj = self.car_track_selector.get_selected_car()
             track_obj = self.car_track_selector.get_selected_track()
+            print(f"[DEBUG] car_obj={car_obj}, track_obj={track_obj}")
             if car_obj and track_obj:
+                print(f"[DEBUG] Updating Quick Start widget: {car_obj.name} @ {track_obj.name}")
                 self.quick_start_widget.set_status("ready", car_obj.name, track_obj.name)
+            else:
+                print(f"[DEBUG] WARNING: car_obj or track_obj is None!")
             
             # Switch to Quick Start tab automatically for easy access
             self.right_tabs.setCurrentIndex(0)
+            print(f"[DEBUG] Switched to Quick Start tab")
         elif car_found or track_found:
+            print(f"[DEBUG] Partial detection")
             self.statusbar.showMessage(
                 f"⚠️ Détection partielle: {car_model} / {track}"
             )
             self.quick_start_widget.set_status("detecting")
+        else:
+            print(f"[DEBUG] ERROR: Neither car nor track found!")
     
     def closeEvent(self, event) -> None:
         """Handle window close."""
