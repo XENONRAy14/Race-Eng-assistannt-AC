@@ -1,11 +1,11 @@
 """
-Sliders Panel - Driver profile preference sliders.
-Provides interactive sliders for adjusting driving style preferences.
+Sliders Panel V2 - Professional driver preference sliders.
+Cleaner design, reduced borders, better visual hierarchy.
 """
 
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, 
-    QSlider, QGroupBox, QFrame, QPushButton
+    QSlider, QFrame, QPushButton
 )
 from PySide6.QtCore import Qt, Signal
 
@@ -13,7 +13,7 @@ from models.driver_profile import DriverProfile
 
 
 class LabeledSlider(QWidget):
-    """A slider with left/right labels and value display."""
+    """A slider with left/right labels - professional minimal design."""
     
     valueChanged = Signal(float)
     
@@ -35,21 +35,36 @@ class LabeledSlider(QWidget):
     def _setup_ui(self, initial_value: float, tooltip: str) -> None:
         """Set up the slider UI."""
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(0, 5, 0, 5)
+        layout.setContentsMargins(0, 8, 0, 8)
+        layout.setSpacing(8)
         
         # Labels row
         labels_layout = QHBoxLayout()
+        labels_layout.setSpacing(15)
         
         self.left_label = QLabel(self.label_left_text)
-        self.left_label.setStyleSheet("font-weight: bold; color: #4CAF50;")
+        self.left_label.setStyleSheet("""
+            color: #999999;
+            font-size: 12px;
+            font-weight: normal;
+        """)
         
         self.value_label = QLabel(f"{initial_value:.0f}%")
         self.value_label.setAlignment(Qt.AlignCenter)
-        self.value_label.setStyleSheet("font-size: 12px; color: #888;")
+        self.value_label.setStyleSheet("""
+            color: #ffffff;
+            font-size: 13px;
+            font-weight: bold;
+            font-family: 'Consolas', monospace;
+        """)
         
         self.right_label = QLabel(self.label_right_text)
         self.right_label.setAlignment(Qt.AlignRight)
-        self.right_label.setStyleSheet("font-weight: bold; color: #2196F3;")
+        self.right_label.setStyleSheet("""
+            color: #999999;
+            font-size: 12px;
+            font-weight: normal;
+        """)
         
         labels_layout.addWidget(self.left_label)
         labels_layout.addStretch()
@@ -64,33 +79,34 @@ class LabeledSlider(QWidget):
         self.slider.setMinimum(0)
         self.slider.setMaximum(100)
         self.slider.setValue(int(initial_value))
-        self.slider.setTickPosition(QSlider.TicksBelow)
-        self.slider.setTickInterval(25)
+        self.slider.setTickPosition(QSlider.NoTicks)
         
         if tooltip:
             self.slider.setToolTip(tooltip)
         
         self.slider.valueChanged.connect(self._on_value_changed)
         
-        # Style the slider
+        # Professional minimal slider style
         self.slider.setStyleSheet("""
             QSlider::groove:horizontal {
-                border: 1px solid #444;
-                height: 8px;
-                background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
-                    stop:0 #4CAF50, stop:0.5 #888, stop:1 #2196F3);
-                border-radius: 4px;
+                background: rgba(255, 255, 255, 0.08);
+                height: 4px;
+                border-radius: 2px;
+                border: none;
             }
             QSlider::handle:horizontal {
-                background: #fff;
-                border: 2px solid #666;
-                width: 18px;
-                margin: -6px 0;
-                border-radius: 9px;
+                background: #ff0000;
+                width: 14px;
+                height: 14px;
+                margin: -5px 0;
+                border-radius: 7px;
+                border: none;
             }
             QSlider::handle:horizontal:hover {
-                background: #eee;
-                border-color: #2196F3;
+                background: #ff3333;
+            }
+            QSlider::handle:horizontal:pressed {
+                background: #cc0000;
             }
         """)
         
@@ -101,216 +117,240 @@ class LabeledSlider(QWidget):
         self.value_label.setText(f"{value}%")
         self.valueChanged.emit(float(value))
     
-    def value(self) -> float:
+    def get_value(self) -> float:
         """Get current slider value."""
         return float(self.slider.value())
     
-    def setValue(self, value: float) -> None:
+    def set_value(self, value: float) -> None:
         """Set slider value."""
         self.slider.setValue(int(value))
 
 
 class SlidersPanel(QWidget):
-    """
-    Panel containing all driver profile sliders.
-    Emits signal when any slider changes.
-    """
+    """Panel containing all driver preference sliders - professional design."""
     
-    profileChanged = Signal(DriverProfile)
+    preferences_changed = Signal(dict)
+    profileChanged = Signal()  # For compatibility with main_window
     
     def __init__(self, parent=None):
         super().__init__(parent)
-        self._expert_mode = False  # Start in simple mode
-        self._profile: DriverProfile = DriverProfile()
         self._setup_ui()
+        
+        # Mode toggle
+        self._expert_mode = False
     
     def _setup_ui(self) -> None:
         """Set up the sliders panel UI."""
         layout = QVBoxLayout(self)
-        layout.setSpacing(10)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)
         
-        # Title
-        title = QLabel("Profil Pilote")
+        # Header
+        header = QFrame()
+        header.setStyleSheet("""
+            QFrame {
+                background: #000000;
+                border-bottom: 1px solid rgba(255, 0, 0, 0.15);
+            }
+        """)
+        header_layout = QHBoxLayout(header)
+        header_layout.setContentsMargins(40, 15, 40, 15)
+        
+        title = QLabel("DRIVING STYLE")
         title.setStyleSheet("""
-            font-size: 16px;
+            color: #ff0000;
+            font-family: 'Arial', sans-serif;
+            font-size: 14px;
             font-weight: bold;
-            color: #fff;
-            padding: 5px;
+            letter-spacing: 3px;
         """)
-        layout.addWidget(title)
+        header_layout.addWidget(title)
         
-        # Separator
-        separator = QFrame()
-        separator.setFrameShape(QFrame.HLine)
-        separator.setStyleSheet("background-color: #444;")
-        layout.addWidget(separator)
+        header_layout.addStretch()
         
-        # Sliders group
-        sliders_group = QGroupBox("Préférences de conduite")
-        sliders_group.setStyleSheet("""
-            QGroupBox {
+        # Mode toggle button
+        self.mode_button = QPushButton("EXPERT MODE")
+        self.mode_button.setCheckable(True)
+        self.mode_button.clicked.connect(self._toggle_mode)
+        self.mode_button.setStyleSheet("""
+            QPushButton {
+                background: rgba(255, 255, 255, 0.05);
+                color: #999999;
+                border: 1px solid rgba(255, 0, 0, 0.2);
+                border-radius: 4px;
+                padding: 6px 15px;
+                font-size: 11px;
                 font-weight: bold;
-                border: 1px solid #444;
-                border-radius: 5px;
-                margin-top: 10px;
-                padding-top: 10px;
+                letter-spacing: 1px;
             }
-            QGroupBox::title {
-                subcontrol-origin: margin;
-                left: 10px;
-                padding: 0 5px;
+            QPushButton:checked {
+                background: rgba(255, 0, 0, 0.2);
+                color: #ff0000;
+                border-color: #ff0000;
+            }
+            QPushButton:hover {
+                background: rgba(255, 255, 255, 0.08);
             }
         """)
-        sliders_layout = QVBoxLayout(sliders_group)
+        header_layout.addWidget(self.mode_button)
         
-        # Stability ↔ Rotation
-        self.stability_rotation_slider = LabeledSlider(
-            label_left="Stabilité",
-            label_right="Rotation",
-            initial_value=self._profile.stability_rotation,
-            tooltip="Équilibre entre stabilité et agilité de la voiture"
-        )
-        self.stability_rotation_slider.valueChanged.connect(
-            lambda v: self._on_slider_changed("stability_rotation", v)
-        )
-        sliders_layout.addWidget(self.stability_rotation_slider)
+        layout.addWidget(header)
         
-        # Grip ↔ Slide
-        self.grip_slide_slider = LabeledSlider(
-            label_left="Grip",
-            label_right="Glisse",
-            initial_value=self._profile.grip_slide,
-            tooltip="Préférence entre grip maximum et glisse contrôlée"
-        )
-        self.grip_slide_slider.valueChanged.connect(
-            lambda v: self._on_slider_changed("grip_slide", v)
-        )
-        sliders_layout.addWidget(self.grip_slide_slider)
+        # Content area
+        content = QWidget()
+        content.setStyleSheet("background: #0a0a0a;")
+        content_layout = QVBoxLayout(content)
+        content_layout.setContentsMargins(40, 30, 40, 30)
+        content_layout.setSpacing(25)
         
-        # Safety ↔ Aggression
-        self.safety_aggression_slider = LabeledSlider(
-            label_left="Sécurité",
-            label_right="Agressivité",
-            initial_value=self._profile.safety_aggression,
-            tooltip="Style de conduite prudent vs agressif"
-        )
-        self.safety_aggression_slider.valueChanged.connect(
-            lambda v: self._on_slider_changed("safety_aggression", v)
-        )
-        sliders_layout.addWidget(self.safety_aggression_slider)
+        # Basic sliders (always visible)
+        basic_section = self._create_section("BASIC PREFERENCES")
         
-        # Drift ↔ Grip
-        self.drift_grip_slider = LabeledSlider(
-            label_left="Drift",
-            label_right="Grip",
-            initial_value=self._profile.drift_grip,
-            tooltip="Setup orienté drift vs grip pur"
+        self.aggression_slider = LabeledSlider(
+            "Confort", "Agressif",
+            50.0,
+            "Balance entre confort et performance"
         )
-        self.drift_grip_slider.valueChanged.connect(
-            lambda v: self._on_slider_changed("drift_grip", v)
-        )
-        sliders_layout.addWidget(self.drift_grip_slider)
+        self.aggression_slider.valueChanged.connect(self._on_preferences_changed)
+        basic_section.addWidget(self.aggression_slider)
         
-        # Comfort ↔ Performance
-        self.comfort_performance_slider = LabeledSlider(
-            label_left="Confort",
-            label_right="Performance",
-            initial_value=self._profile.comfort_performance,
-            tooltip="Suspensions souples (confort) vs rigides (performance)"
+        self.stability_slider = LabeledSlider(
+            "Nerveux", "Stable",
+            50.0,
+            "Stabilité vs réactivité"
         )
-        self.comfort_performance_slider.valueChanged.connect(
-            lambda v: self._on_slider_changed("comfort_performance", v)
+        self.stability_slider.valueChanged.connect(self._on_preferences_changed)
+        basic_section.addWidget(self.stability_slider)
+        
+        self.downforce_slider = LabeledSlider(
+            "Vitesse max", "Appui",
+            50.0,
+            "Vitesse de pointe vs appui aérodynamique"
         )
-        sliders_layout.addWidget(self.comfort_performance_slider)
+        self.downforce_slider.valueChanged.connect(self._on_preferences_changed)
+        basic_section.addWidget(self.downforce_slider)
         
-        layout.addWidget(sliders_group)
+        content_layout.addLayout(basic_section)
         
-        # Profile summary
-        self.summary_label = QLabel()
-        self.summary_label.setStyleSheet("""
-            color: #888;
+        # Advanced sliders (expert mode only)
+        self.advanced_container = QWidget()
+        advanced_layout = QVBoxLayout(self.advanced_container)
+        advanced_layout.setContentsMargins(0, 0, 0, 0)
+        advanced_layout.setSpacing(25)
+        
+        advanced_section = self._create_section("ADVANCED TUNING")
+        
+        self.oversteer_slider = LabeledSlider(
+            "Sous-virage", "Sur-virage",
+            50.0,
+            "Tendance de la voiture en virage"
+        )
+        self.oversteer_slider.valueChanged.connect(self._on_preferences_changed)
+        advanced_section.addWidget(self.oversteer_slider)
+        
+        self.brake_bias_slider = LabeledSlider(
+            "Arrière", "Avant",
+            50.0,
+            "Répartition du freinage"
+        )
+        self.brake_bias_slider.valueChanged.connect(self._on_preferences_changed)
+        advanced_section.addWidget(self.brake_bias_slider)
+        
+        self.diff_aggression_slider = LabeledSlider(
+            "Ouvert", "Fermé",
+            50.0,
+            "Agressivité du différentiel"
+        )
+        self.diff_aggression_slider.valueChanged.connect(self._on_preferences_changed)
+        advanced_section.addWidget(self.diff_aggression_slider)
+        
+        advanced_layout.addLayout(advanced_section)
+        self.advanced_container.hide()
+        
+        content_layout.addWidget(self.advanced_container)
+        content_layout.addStretch()
+        
+        layout.addWidget(content)
+    
+    def _create_section(self, title: str) -> QVBoxLayout:
+        """Create a section with title."""
+        section = QVBoxLayout()
+        section.setSpacing(15)
+        
+        section_title = QLabel(title)
+        section_title.setStyleSheet("""
+            color: #666666;
             font-size: 11px;
-            padding: 5px;
+            font-weight: bold;
+            letter-spacing: 2px;
+            margin-bottom: 5px;
         """)
-        self.summary_label.setWordWrap(True)
-        layout.addWidget(self.summary_label)
+        section.addWidget(section_title)
         
-        layout.addStretch()
-        
-        self._update_summary()
+        return section
     
-    def _on_slider_changed(self, slider_name: str, value: float) -> None:
-        """Handle slider value change."""
-        setattr(self._profile, slider_name, value)
-        self._update_summary()
-        self.profileChanged.emit(self._profile)
-    
-    def _update_summary(self) -> None:
-        """Update the profile summary text."""
-        factors = self._profile.get_all_factors()
+    def _toggle_mode(self, checked: bool):
+        """Toggle between simple and expert mode."""
+        self._expert_mode = checked
+        self.advanced_container.setVisible(checked)
         
-        traits = []
-        
-        if factors["stability"] > 0.6:
-            traits.append("stable")
-        elif factors["rotation"] > 0.6:
-            traits.append("agile")
-        
-        if factors["grip"] > 0.7:
-            traits.append("grip-focused")
-        elif factors["slide"] > 0.6:
-            traits.append("slide-friendly")
-        
-        if factors["aggression"] > 0.6:
-            traits.append("aggressive")
-        elif factors["safety"] > 0.7:
-            traits.append("safe")
-        
-        if factors["drift"] > 0.5:
-            traits.append("drift-oriented")
-        
-        if factors["performance"] > 0.6:
-            traits.append("performance")
-        elif factors["comfort"] > 0.6:
-            traits.append("comfortable")
-        
-        if traits:
-            summary = f"Style: {', '.join(traits)}"
+        if checked:
+            self.mode_button.setText("SIMPLE MODE")
         else:
-            summary = "Style: balanced"
-        
-        self.summary_label.setText(summary)
+            self.mode_button.setText("EXPERT MODE")
     
-    def get_profile(self) -> DriverProfile:
-        """Get the current driver profile."""
-        return self._profile
+    def _on_preferences_changed(self, value: float) -> None:
+        """Handle preference change."""
+        prefs = self.get_preferences()
+        self.preferences_changed.emit(prefs)
+        self.profileChanged.emit()  # For compatibility
     
-    def set_profile(self, profile: DriverProfile) -> None:
-        """Set the driver profile and update sliders."""
-        self._profile = profile
+    def get_preferences(self) -> dict:
+        """Get current preference values."""
+        prefs = {
+            "aggression": self.aggression_slider.get_value(),
+            "stability": self.stability_slider.get_value(),
+            "downforce": self.downforce_slider.get_value(),
+        }
         
-        # Update sliders without triggering signals
-        self.stability_rotation_slider.slider.blockSignals(True)
-        self.grip_slide_slider.slider.blockSignals(True)
-        self.safety_aggression_slider.slider.blockSignals(True)
-        self.drift_grip_slider.slider.blockSignals(True)
-        self.comfort_performance_slider.slider.blockSignals(True)
+        if self._expert_mode:
+            prefs.update({
+                "oversteer_tendency": self.oversteer_slider.get_value(),
+                "brake_bias": self.brake_bias_slider.get_value(),
+                "diff_aggression": self.diff_aggression_slider.get_value(),
+            })
         
-        self.stability_rotation_slider.setValue(profile.stability_rotation)
-        self.grip_slide_slider.setValue(profile.grip_slide)
-        self.safety_aggression_slider.setValue(profile.safety_aggression)
-        self.drift_grip_slider.setValue(profile.drift_grip)
-        self.comfort_performance_slider.setValue(profile.comfort_performance)
-        
-        self.stability_rotation_slider.slider.blockSignals(False)
-        self.grip_slide_slider.slider.blockSignals(False)
-        self.safety_aggression_slider.slider.blockSignals(False)
-        self.drift_grip_slider.slider.blockSignals(False)
-        self.comfort_performance_slider.slider.blockSignals(False)
-        
-        self._update_summary()
+        return prefs
     
-    def reset_to_defaults(self) -> None:
-        """Reset all sliders to default values."""
-        self.set_profile(DriverProfile())
-        self.profileChanged.emit(self._profile)
+    def set_preferences(self, prefs: dict) -> None:
+        """Set preference values."""
+        if "aggression" in prefs:
+            self.aggression_slider.set_value(prefs["aggression"])
+        if "stability" in prefs:
+            self.stability_slider.set_value(prefs["stability"])
+        if "downforce" in prefs:
+            self.downforce_slider.set_value(prefs["downforce"])
+        if "oversteer_tendency" in prefs:
+            self.oversteer_slider.set_value(prefs["oversteer_tendency"])
+        if "brake_bias" in prefs:
+            self.brake_bias_slider.set_value(prefs["brake_bias"])
+        if "diff_aggression" in prefs:
+            self.diff_aggression_slider.set_value(prefs["diff_aggression"])
+    
+    def load_from_profile(self, profile: DriverProfile) -> None:
+        """Load preferences from driver profile."""
+        self.aggression_slider.set_value(profile.aggression * 100)
+        self.stability_slider.set_value(profile.stability * 100)
+        self.downforce_slider.set_value(profile.downforce_preference * 100)
+        self.oversteer_slider.set_value(profile.oversteer_tendency * 100)
+        self.brake_bias_slider.set_value(profile.brake_bias * 100)
+        self.diff_aggression_slider.set_value(profile.diff_aggression * 100)
+    
+    def apply_to_profile(self, profile: DriverProfile) -> None:
+        """Apply current preferences to driver profile."""
+        profile.aggression = self.aggression_slider.get_value() / 100.0
+        profile.stability = self.stability_slider.get_value() / 100.0
+        profile.downforce_preference = self.downforce_slider.get_value() / 100.0
+        profile.oversteer_tendency = self.oversteer_slider.get_value() / 100.0
+        profile.brake_bias = self.brake_bias_slider.get_value() / 100.0
+        profile.diff_aggression = self.diff_aggression_slider.get_value() / 100.0

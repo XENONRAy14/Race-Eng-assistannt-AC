@@ -1,15 +1,13 @@
 """
-Car/Track Selector - UI for selecting car and track.
-Provides searchable dropdowns for car and track selection.
+Car/Track Selector V2 - Professional minimal design.
+Cleaner layout, reduced borders, better visual hierarchy.
 """
 
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel,
-    QComboBox, QLineEdit, QGroupBox, QFrame,
-    QPushButton, QCompleter
+    QComboBox, QFrame, QCompleter
 )
 from PySide6.QtCore import Qt, Signal
-from PySide6.QtGui import QStandardItemModel, QStandardItem
 
 from typing import Optional
 from models.car import Car
@@ -17,7 +15,7 @@ from models.track import Track
 
 
 class SearchableComboBox(QComboBox):
-    """A combo box with search/filter functionality."""
+    """A combo box with search/filter functionality - minimal design."""
     
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -29,35 +27,49 @@ class SearchableComboBox(QComboBox):
         self.completer().setCompletionMode(QCompleter.PopupCompletion)
         self.completer().setFilterMode(Qt.MatchContains)
         
-        # Style
+        # Professional minimal style
         self.setStyleSheet("""
             QComboBox {
-                padding: 8px;
-                border: 1px solid #444;
+                padding: 10px 15px;
+                border: 1px solid rgba(255, 0, 0, 0.3);
                 border-radius: 4px;
-                background-color: #2a2a2a;
-                color: #fff;
-                min-width: 200px;
+                background-color: rgba(0, 0, 0, 0.5);
+                color: #ffffff;
+                min-width: 250px;
+                font-size: 13px;
             }
             QComboBox:hover {
-                border-color: #2196F3;
+                border-color: #ff0000;
+                background-color: rgba(0, 0, 0, 0.7);
+            }
+            QComboBox:focus {
+                border-color: #ff0000;
             }
             QComboBox::drop-down {
                 border: none;
                 width: 30px;
             }
+            QComboBox::down-arrow {
+                image: none;
+                border-left: 4px solid transparent;
+                border-right: 4px solid transparent;
+                border-top: 5px solid #999999;
+                margin-right: 8px;
+            }
             QComboBox QAbstractItemView {
-                background-color: #2a2a2a;
-                color: #fff;
-                selection-background-color: #2196F3;
+                background-color: #1a1a1a;
+                color: #ffffff;
+                selection-background-color: #ff0000;
+                border: 1px solid rgba(255, 0, 0, 0.3);
+                outline: none;
             }
         """)
 
 
 class CarTrackSelector(QWidget):
     """
-    Widget for selecting car and track.
-    Provides searchable dropdowns and displays selection info.
+    Widget for selecting car and track - professional design.
+    Clean layout with minimal borders.
     """
     
     carChanged = Signal(object)  # Emits Car or None
@@ -77,319 +89,185 @@ class CarTrackSelector(QWidget):
     def _setup_ui(self) -> None:
         """Set up the selector UI."""
         layout = QVBoxLayout(self)
-        layout.setSpacing(15)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)
         
-        # Title
-        title = QLabel("Sélection Voiture / Piste")
+        # Header
+        header = QFrame()
+        header.setStyleSheet("""
+            QFrame {
+                background: #000000;
+                border-bottom: 1px solid rgba(255, 0, 0, 0.15);
+            }
+        """)
+        header_layout = QHBoxLayout(header)
+        header_layout.setContentsMargins(40, 15, 40, 15)
+        
+        title = QLabel("CAR & TRACK")
         title.setStyleSheet("""
-            font-size: 16px;
+            color: #ff0000;
+            font-family: 'Arial', sans-serif;
+            font-size: 14px;
             font-weight: bold;
-            color: #fff;
-            padding: 5px;
+            letter-spacing: 3px;
         """)
-        layout.addWidget(title)
+        header_layout.addWidget(title)
+        header_layout.addStretch()
         
-        # Separator
-        separator = QFrame()
-        separator.setFrameShape(QFrame.HLine)
-        separator.setStyleSheet("background-color: #444;")
-        layout.addWidget(separator)
+        layout.addWidget(header)
         
-        # Car selection group
-        car_group = QGroupBox("Voiture")
-        car_group.setStyleSheet("""
-            QGroupBox {
-                font-weight: bold;
-                border: 1px solid #444;
-                border-radius: 5px;
-                margin-top: 10px;
-                padding-top: 10px;
-            }
-            QGroupBox::title {
-                subcontrol-origin: margin;
-                left: 10px;
-                padding: 0 5px;
-            }
+        # Content area
+        content = QWidget()
+        content.setStyleSheet("background: #0a0a0a;")
+        content_layout = QVBoxLayout(content)
+        content_layout.setContentsMargins(40, 30, 40, 30)
+        content_layout.setSpacing(25)
+        
+        # Car selection
+        car_section = QVBoxLayout()
+        car_section.setSpacing(10)
+        
+        car_label = QLabel("VEHICLE")
+        car_label.setStyleSheet("""
+            color: #666666;
+            font-size: 11px;
+            font-weight: bold;
+            letter-spacing: 2px;
         """)
-        car_layout = QVBoxLayout(car_group)
+        car_section.addWidget(car_label)
         
         self.car_combo = SearchableComboBox()
-        self.car_combo.setPlaceholderText("Rechercher une voiture...")
         self.car_combo.currentIndexChanged.connect(self._on_car_changed)
-        car_layout.addWidget(self.car_combo)
+        car_section.addWidget(self.car_combo)
         
-        # Car info label
-        self.car_info_label = QLabel()
-        self.car_info_label.setStyleSheet("color: #888; font-size: 11px;")
-        self.car_info_label.setWordWrap(True)
-        car_layout.addWidget(self.car_info_label)
-        
-        layout.addWidget(car_group)
-        
-        # Track selection group
-        track_group = QGroupBox("Piste")
-        track_group.setStyleSheet("""
-            QGroupBox {
-                font-weight: bold;
-                border: 1px solid #444;
-                border-radius: 5px;
-                margin-top: 10px;
-                padding-top: 10px;
-            }
-            QGroupBox::title {
-                subcontrol-origin: margin;
-                left: 10px;
-                padding: 0 5px;
-            }
+        # Car info
+        self.car_info = QLabel("No car selected")
+        self.car_info.setStyleSheet("""
+            color: #999999;
+            font-size: 12px;
+            margin-top: 5px;
         """)
-        track_layout = QVBoxLayout(track_group)
+        self.car_info.setWordWrap(True)
+        car_section.addWidget(self.car_info)
+        
+        content_layout.addLayout(car_section)
+        
+        # Track selection
+        track_section = QVBoxLayout()
+        track_section.setSpacing(10)
+        
+        track_label = QLabel("CIRCUIT")
+        track_label.setStyleSheet("""
+            color: #666666;
+            font-size: 11px;
+            font-weight: bold;
+            letter-spacing: 2px;
+        """)
+        track_section.addWidget(track_label)
         
         self.track_combo = SearchableComboBox()
-        self.track_combo.setPlaceholderText("Rechercher une piste...")
         self.track_combo.currentIndexChanged.connect(self._on_track_changed)
-        track_layout.addWidget(self.track_combo)
+        track_section.addWidget(self.track_combo)
         
-        # Track info label
-        self.track_info_label = QLabel()
-        self.track_info_label.setStyleSheet("color: #888; font-size: 11px;")
-        self.track_info_label.setWordWrap(True)
-        track_layout.addWidget(self.track_info_label)
-        
-        layout.addWidget(track_group)
-        
-        # Filter buttons
-        filter_layout = QHBoxLayout()
-        
-        self.touge_filter_btn = QPushButton("🏔️ Touge uniquement")
-        self.touge_filter_btn.setCheckable(True)
-        self.touge_filter_btn.setStyleSheet("""
-            QPushButton {
-                padding: 5px 10px;
-                border: 1px solid #444;
-                border-radius: 4px;
-                background-color: #2a2a2a;
-                color: #888;
-            }
-            QPushButton:checked {
-                background-color: #4CAF50;
-                color: #fff;
-                border-color: #4CAF50;
-            }
-            QPushButton:hover {
-                border-color: #4CAF50;
-            }
+        # Track info
+        self.track_info = QLabel("No track selected")
+        self.track_info.setStyleSheet("""
+            color: #999999;
+            font-size: 12px;
+            margin-top: 5px;
         """)
-        self.touge_filter_btn.clicked.connect(self._apply_track_filter)
-        filter_layout.addWidget(self.touge_filter_btn)
+        self.track_info.setWordWrap(True)
+        track_section.addWidget(self.track_info)
         
-        self.rwd_filter_btn = QPushButton("🚗 RWD uniquement")
-        self.rwd_filter_btn.setCheckable(True)
-        self.rwd_filter_btn.setStyleSheet("""
-            QPushButton {
-                padding: 5px 10px;
-                border: 1px solid #444;
-                border-radius: 4px;
-                background-color: #2a2a2a;
-                color: #888;
-            }
-            QPushButton:checked {
-                background-color: #2196F3;
-                color: #fff;
-                border-color: #2196F3;
-            }
-            QPushButton:hover {
-                border-color: #2196F3;
-            }
-        """)
-        self.rwd_filter_btn.clicked.connect(self._apply_car_filter)
-        filter_layout.addWidget(self.rwd_filter_btn)
+        content_layout.addLayout(track_section)
+        content_layout.addStretch()
         
-        filter_layout.addStretch()
-        layout.addLayout(filter_layout)
+        layout.addWidget(content)
+    
+    def set_cars(self, cars: list[Car]) -> None:
+        """Set available cars."""
+        self._cars = cars
+        self.car_combo.clear()
+        self.car_combo.addItem("-- Select Car --", None)
         
-        # Refresh button
-        refresh_btn = QPushButton("🔄 Actualiser")
-        refresh_btn.setStyleSheet("""
-            QPushButton {
-                padding: 8px 15px;
-                border: 1px solid #444;
-                border-radius: 4px;
-                background-color: #2a2a2a;
-                color: #fff;
-            }
-            QPushButton:hover {
-                background-color: #333;
-                border-color: #2196F3;
-            }
-        """)
-        refresh_btn.clicked.connect(self._on_refresh_clicked)
-        layout.addWidget(refresh_btn)
+        for car in cars:
+            self.car_combo.addItem(car.name, car)
+    
+    def set_tracks(self, tracks: list[Track]) -> None:
+        """Set available tracks."""
+        self._tracks = tracks
+        self.track_combo.clear()
+        self.track_combo.addItem("-- Select Track --", None)
         
-        layout.addStretch()
+        for track in tracks:
+            display_name = f"{track.name}"
+            if track.config and track.config != "default":
+                display_name += f" ({track.config})"
+            self.track_combo.addItem(display_name, track)
     
     def _on_car_changed(self, index: int) -> None:
         """Handle car selection change."""
-        if index < 0 or index >= len(self._filtered_cars):
-            self._selected_car = None
-            self.car_info_label.setText("")
-        else:
-            self._selected_car = self._filtered_cars[index]
-            self._update_car_info()
+        car = self.car_combo.itemData(index)
+        self._selected_car = car
         
-        self.carChanged.emit(self._selected_car)
+        if car:
+            info = f"🏎️ {car.name}"
+            if hasattr(car, 'power_hp') and car.power_hp:
+                info += f" • {car.power_hp}hp"
+            if hasattr(car, 'weight_kg') and car.weight_kg:
+                info += f" • {car.weight_kg}kg"
+            self.car_info.setText(info)
+            self.car_info.setStyleSheet("color: #ffffff; font-size: 12px; margin-top: 5px;")
+        else:
+            self.car_info.setText("No car selected")
+            self.car_info.setStyleSheet("color: #999999; font-size: 12px; margin-top: 5px;")
+        
+        self.carChanged.emit(car)
         self.selectionChanged.emit(self._selected_car, self._selected_track)
     
     def _on_track_changed(self, index: int) -> None:
         """Handle track selection change."""
-        if index < 0 or index >= len(self._filtered_tracks):
-            self._selected_track = None
-            self.track_info_label.setText("")
-        else:
-            self._selected_track = self._filtered_tracks[index]
-            self._update_track_info()
+        track = self.track_combo.itemData(index)
+        self._selected_track = track
         
-        self.trackChanged.emit(self._selected_track)
+        if track:
+            info = f"🏁 {track.name}"
+            if track.config and track.config != "default":
+                info += f" ({track.config})"
+            if hasattr(track, 'length_km') and track.length_km:
+                info += f" • {track.length_km:.2f}km"
+            self.track_info.setText(info)
+            self.track_info.setStyleSheet("color: #ffffff; font-size: 12px; margin-top: 5px;")
+        else:
+            self.track_info.setText("No track selected")
+            self.track_info.setStyleSheet("color: #999999; font-size: 12px; margin-top: 5px;")
+        
+        self.trackChanged.emit(track)
         self.selectionChanged.emit(self._selected_car, self._selected_track)
     
-    def _update_car_info(self) -> None:
-        """Update car info label."""
-        if not self._selected_car:
-            self.car_info_label.setText("")
-            return
-        
-        car = self._selected_car
-        info_parts = []
-        
-        if car.brand:
-            info_parts.append(car.brand)
-        if car.drivetrain:
-            info_parts.append(car.drivetrain)
-        if car.power_hp > 0:
-            info_parts.append(f"{car.power_hp} HP")
-        if car.weight_kg > 0:
-            info_parts.append(f"{car.weight_kg} kg")
-        
-        self.car_info_label.setText(" | ".join(info_parts))
-    
-    def _update_track_info(self) -> None:
-        """Update track info label."""
-        if not self._selected_track:
-            self.track_info_label.setText("")
-            return
-        
-        track = self._selected_track
-        info_parts = []
-        
-        if track.track_type:
-            info_parts.append(track.track_type.title())
-        if track.length_m > 0:
-            if track.length_m >= 1000:
-                info_parts.append(f"{track.length_m / 1000:.1f} km")
-            else:
-                info_parts.append(f"{track.length_m} m")
-        if track.config:
-            info_parts.append(f"Layout: {track.config}")
-        
-        self.track_info_label.setText(" | ".join(info_parts))
-    
-    def _apply_car_filter(self) -> None:
-        """Apply car filter and refresh list."""
-        self._populate_cars()
-    
-    def _apply_track_filter(self) -> None:
-        """Apply track filter and refresh list."""
-        self._populate_tracks()
-    
-    def _on_refresh_clicked(self) -> None:
-        """Handle refresh button click."""
-        # This will be connected to the main window to refresh from AC
-        pass
-    
-    def set_cars(self, cars: list[Car]) -> None:
-        """Set the list of available cars."""
-        self._cars = cars
-        self._populate_cars()
-    
-    def set_tracks(self, tracks: list[Track]) -> None:
-        """Set the list of available tracks."""
-        self._tracks = tracks
-        self._populate_tracks()
-    
-    def _populate_cars(self) -> None:
-        """Populate the car combo box."""
-        self.car_combo.blockSignals(True)
-        self.car_combo.clear()
-        
-        # Apply filter
-        if self.rwd_filter_btn.isChecked():
-            self._filtered_cars = [c for c in self._cars if c.drivetrain == "RWD"]
-        else:
-            self._filtered_cars = self._cars.copy()
-        
-        # Sort by name
-        self._filtered_cars.sort(key=lambda c: c.name)
-        
-        for car in self._filtered_cars:
-            display_name = car.name
-            if car.brand:
-                display_name = f"{car.brand} {car.name}"
-            self.car_combo.addItem(display_name)
-        
-        self.car_combo.setCurrentIndex(-1)
-        self.car_combo.blockSignals(False)
-        
-        self._selected_car = None
-        self.car_info_label.setText(f"{len(self._filtered_cars)} voitures disponibles")
-    
-    def _populate_tracks(self) -> None:
-        """Populate the track combo box."""
-        self.track_combo.blockSignals(True)
-        self.track_combo.clear()
-        
-        # Apply filter
-        if self.touge_filter_btn.isChecked():
-            self._filtered_tracks = [t for t in self._tracks if t.track_type == "touge"]
-        else:
-            self._filtered_tracks = self._tracks.copy()
-        
-        # Sort by name
-        self._filtered_tracks.sort(key=lambda t: t.name)
-        
-        for track in self._filtered_tracks:
-            display_name = track.name
-            if track.config:
-                display_name = f"{track.name} ({track.config})"
-            self.track_combo.addItem(display_name)
-        
-        self.track_combo.setCurrentIndex(-1)
-        self.track_combo.blockSignals(False)
-        
-        self._selected_track = None
-        self.track_info_label.setText(f"{len(self._filtered_tracks)} pistes disponibles")
-    
     def get_selected_car(self) -> Optional[Car]:
-        """Get the currently selected car."""
+        """Get currently selected car."""
         return self._selected_car
     
     def get_selected_track(self) -> Optional[Track]:
-        """Get the currently selected track."""
+        """Get currently selected track."""
         return self._selected_track
     
-    def set_selected_car(self, car_id: str) -> None:
-        """Set the selected car by ID."""
-        for i, car in enumerate(self._filtered_cars):
-            if car.car_id == car_id:
+    def select_car_by_id(self, car_id: str) -> bool:
+        """Select car by ID."""
+        for i in range(self.car_combo.count()):
+            car = self.car_combo.itemData(i)
+            if car and car.id == car_id:
                 self.car_combo.setCurrentIndex(i)
-                return
+                return True
+        return False
     
-    def set_selected_track(self, track_id: str, config: str = "") -> None:
-        """Set the selected track by ID."""
-        full_id = f"{track_id}/{config}" if config else track_id
-        for i, track in enumerate(self._filtered_tracks):
-            if track.full_id == full_id or track.track_id == track_id:
-                self.track_combo.setCurrentIndex(i)
-                return
-    
-    def has_valid_selection(self) -> bool:
-        """Check if both car and track are selected."""
-        return self._selected_car is not None and self._selected_track is not None
+    def select_track_by_id(self, track_id: str, config: str = None) -> bool:
+        """Select track by ID and optional config."""
+        for i in range(self.track_combo.count()):
+            track = self.track_combo.itemData(i)
+            if track and track.id == track_id:
+                if config is None or track.config == config:
+                    self.track_combo.setCurrentIndex(i)
+                    return True
+        return False

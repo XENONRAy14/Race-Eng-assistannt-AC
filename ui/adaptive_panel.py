@@ -1,18 +1,17 @@
 """
-Adaptive Setup Panel - UI for adaptive AI features.
-Shows learning progress, conditions adjustment, and performance comparison.
+Adaptive Setup Panel V2 - Simplified UI with better visual hierarchy.
+Reduced borders, cleaner layout, professional appearance.
 """
 
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QFrame,
-    QPushButton, QSlider, QComboBox, QGroupBox, QProgressBar
+    QPushButton, QSlider, QComboBox, QProgressBar
 )
 from PySide6.QtCore import Qt, Signal
-from PySide6.QtGui import QFont
 
 
 class ConditionsWidget(QFrame):
-    """Widget for adjusting track conditions."""
+    """Widget for adjusting track conditions - simplified design."""
     
     conditions_changed = Signal(dict)
     
@@ -25,15 +24,16 @@ class ConditionsWidget(QFrame):
         self.setFrameStyle(QFrame.NoFrame)
         self.setStyleSheet("""
             QFrame {
-                background: rgba(26, 0, 0, 0.3);
+                background: rgba(255, 255, 255, 0.02);
                 border: none;
-                border-radius: 8px;
-                padding: 20px;
+                border-left: 3px solid #ff0000;
+                border-radius: 0px;
+                padding: 25px 30px;
             }
         """)
         
         layout = QVBoxLayout(self)
-        layout.setSpacing(15)
+        layout.setSpacing(18)
         
         # Title
         title = QLabel("CONDITIONS")
@@ -42,15 +42,17 @@ class ConditionsWidget(QFrame):
             font-size: 13px;
             font-weight: bold;
             letter-spacing: 2px;
-            margin-bottom: 10px;
+            margin-bottom: 5px;
         """)
         layout.addWidget(title)
         
         # Temperature slider
         temp_layout = QHBoxLayout()
+        temp_layout.setSpacing(15)
+        
         temp_label = QLabel("Air Temp")
         temp_label.setStyleSheet("color: #999999; font-size: 12px;")
-        temp_label.setFixedWidth(100)
+        temp_label.setFixedWidth(80)
         temp_layout.addWidget(temp_label)
         
         self.temp_slider = QSlider(Qt.Horizontal)
@@ -58,23 +60,23 @@ class ConditionsWidget(QFrame):
         self.temp_slider.setValue(25)
         self.temp_slider.setStyleSheet("""
             QSlider::groove:horizontal {
-                background: rgba(255, 255, 255, 0.1);
-                height: 6px;
-                border-radius: 3px;
+                background: rgba(255, 255, 255, 0.08);
+                height: 4px;
+                border-radius: 2px;
             }
             QSlider::handle:horizontal {
                 background: #ff0000;
-                width: 16px;
-                height: 16px;
+                width: 14px;
+                height: 14px;
                 margin: -5px 0;
-                border-radius: 8px;
+                border-radius: 7px;
             }
         """)
         temp_layout.addWidget(self.temp_slider)
         
         self.temp_value = QLabel("25°C")
-        self.temp_value.setStyleSheet("color: #ffffff; font-size: 14px; font-weight: bold;")
-        self.temp_value.setFixedWidth(60)
+        self.temp_value.setStyleSheet("color: #ffffff; font-size: 13px; font-weight: bold;")
+        self.temp_value.setFixedWidth(50)
         self.temp_value.setAlignment(Qt.AlignRight)
         temp_layout.addWidget(self.temp_value)
         
@@ -82,9 +84,11 @@ class ConditionsWidget(QFrame):
         
         # Track temperature slider
         track_temp_layout = QHBoxLayout()
+        track_temp_layout.setSpacing(15)
+        
         track_temp_label = QLabel("Track Temp")
         track_temp_label.setStyleSheet("color: #999999; font-size: 12px;")
-        track_temp_label.setFixedWidth(100)
+        track_temp_label.setFixedWidth(80)
         track_temp_layout.addWidget(track_temp_label)
         
         self.track_temp_slider = QSlider(Qt.Horizontal)
@@ -92,23 +96,23 @@ class ConditionsWidget(QFrame):
         self.track_temp_slider.setValue(30)
         self.track_temp_slider.setStyleSheet("""
             QSlider::groove:horizontal {
-                background: rgba(255, 255, 255, 0.1);
-                height: 6px;
-                border-radius: 3px;
+                background: rgba(255, 255, 255, 0.08);
+                height: 4px;
+                border-radius: 2px;
             }
             QSlider::handle:horizontal {
                 background: #ff0000;
-                width: 16px;
-                height: 16px;
+                width: 14px;
+                height: 14px;
                 margin: -5px 0;
-                border-radius: 8px;
+                border-radius: 7px;
             }
         """)
         track_temp_layout.addWidget(self.track_temp_slider)
         
         self.track_temp_value = QLabel("30°C")
-        self.track_temp_value.setStyleSheet("color: #ffffff; font-size: 14px; font-weight: bold;")
-        self.track_temp_value.setFixedWidth(60)
+        self.track_temp_value.setStyleSheet("color: #ffffff; font-size: 13px; font-weight: bold;")
+        self.track_temp_value.setFixedWidth(50)
         self.track_temp_value.setAlignment(Qt.AlignRight)
         track_temp_layout.addWidget(self.track_temp_value)
         
@@ -116,9 +120,11 @@ class ConditionsWidget(QFrame):
         
         # Weather selector
         weather_layout = QHBoxLayout()
+        weather_layout.setSpacing(15)
+        
         weather_label = QLabel("Weather")
         weather_label.setStyleSheet("color: #999999; font-size: 12px;")
-        weather_label.setFixedWidth(100)
+        weather_label.setFixedWidth(80)
         weather_layout.addWidget(weather_label)
         
         self.weather_combo = QComboBox()
@@ -127,10 +133,10 @@ class ConditionsWidget(QFrame):
             QComboBox {
                 background: rgba(0, 0, 0, 0.5);
                 color: #ffffff;
-                border: 1px solid #ff0000;
+                border: 1px solid rgba(255, 0, 0, 0.3);
                 border-radius: 4px;
-                padding: 8px;
-                font-size: 14px;
+                padding: 6px 10px;
+                font-size: 13px;
             }
             QComboBox::drop-down {
                 border: none;
@@ -139,6 +145,7 @@ class ConditionsWidget(QFrame):
                 background: #1a1a1a;
                 color: #ffffff;
                 selection-background-color: #ff0000;
+                border: 1px solid rgba(255, 0, 0, 0.3);
             }
         """)
         weather_layout.addWidget(self.weather_combo)
@@ -192,7 +199,7 @@ class ConditionsWidget(QFrame):
 
 
 class LearningStatsWidget(QFrame):
-    """Widget showing AI learning statistics."""
+    """Widget showing AI learning statistics - cleaner design."""
     
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -203,10 +210,11 @@ class LearningStatsWidget(QFrame):
         self.setFrameStyle(QFrame.NoFrame)
         self.setStyleSheet("""
             QFrame {
-                background: rgba(26, 0, 0, 0.3);
+                background: rgba(255, 255, 255, 0.02);
                 border: none;
-                border-radius: 8px;
-                padding: 20px;
+                border-left: 3px solid #ff0000;
+                border-radius: 0px;
+                padding: 25px 30px;
             }
         """)
         
@@ -214,31 +222,59 @@ class LearningStatsWidget(QFrame):
         layout.setSpacing(15)
         
         # Title
-        title = QLabel("🤖 Apprentissage IA")
+        title = QLabel("AI LEARNING")
         title.setStyleSheet("""
             color: #ff0000;
-            font-size: 18px;
+            font-size: 13px;
             font-weight: bold;
-            margin-bottom: 10px;
+            letter-spacing: 2px;
+            margin-bottom: 5px;
         """)
         layout.addWidget(title)
         
-        # Stats labels
-        self.laps_label = QLabel("Tours enregistrés: 0")
-        self.laps_label.setStyleSheet("color: #ffffff; font-size: 14px;")
-        layout.addWidget(self.laps_label)
+        # Stats in compact format
+        stats_layout = QVBoxLayout()
+        stats_layout.setSpacing(10)
         
-        self.best_time_label = QLabel("Meilleur temps: --")
-        self.best_time_label.setStyleSheet("color: #00ff00; font-size: 14px; font-weight: bold;")
-        layout.addWidget(self.best_time_label)
+        # Laps
+        laps_row = QHBoxLayout()
+        laps_label = QLabel("Laps Recorded")
+        laps_label.setStyleSheet("color: #999999; font-size: 12px;")
+        laps_row.addWidget(laps_label)
+        laps_row.addStretch()
+        self.laps_value = QLabel("0")
+        self.laps_value.setStyleSheet("color: #ffffff; font-size: 14px; font-weight: bold;")
+        laps_row.addWidget(self.laps_value)
+        stats_layout.addLayout(laps_row)
         
-        self.consistency_label = QLabel("Constance: --")
-        self.consistency_label.setStyleSheet("color: #ffffff; font-size: 14px;")
-        layout.addWidget(self.consistency_label)
+        # Best time
+        best_row = QHBoxLayout()
+        best_label = QLabel("Best Time")
+        best_label.setStyleSheet("color: #999999; font-size: 12px;")
+        best_row.addWidget(best_label)
+        best_row.addStretch()
+        self.best_time_value = QLabel("--")
+        self.best_time_value.setStyleSheet("color: #00ff00; font-size: 14px; font-weight: bold;")
+        best_row.addWidget(self.best_time_value)
+        stats_layout.addLayout(best_row)
+        
+        # Consistency
+        cons_row = QHBoxLayout()
+        cons_label = QLabel("Consistency")
+        cons_label.setStyleSheet("color: #999999; font-size: 12px;")
+        cons_row.addWidget(cons_label)
+        cons_row.addStretch()
+        self.consistency_value = QLabel("--")
+        self.consistency_value.setStyleSheet("color: #ffffff; font-size: 14px; font-weight: bold;")
+        cons_row.addWidget(self.consistency_value)
+        stats_layout.addLayout(cons_row)
+        
+        layout.addLayout(stats_layout)
         
         # Confidence bar
-        conf_label = QLabel("Confiance IA:")
-        conf_label.setStyleSheet("color: #888; font-size: 12px;")
+        layout.addSpacing(5)
+        conf_label = QLabel("AI CONFIDENCE")
+        conf_label.setStyleSheet("color: #666666; font-size: 11px; letter-spacing: 1px;")
         layout.addWidget(conf_label)
         
         self.confidence_bar = QProgressBar()
@@ -246,18 +282,21 @@ class LearningStatsWidget(QFrame):
         self.confidence_bar.setValue(0)
         self.confidence_bar.setTextVisible(True)
         self.confidence_bar.setFormat("%p%")
-        self.confidence_bar.setFixedHeight(20)
+        self.confidence_bar.setFixedHeight(18)
         self.confidence_bar.setStyleSheet("""
             QProgressBar {
-                background: rgba(255, 255, 255, 0.1);
+                background: rgba(255, 255, 255, 0.05);
                 border: none;
-                border-radius: 4px;
+                border-radius: 2px;
                 text-align: center;
                 color: #ffffff;
+                font-size: 11px;
+                font-weight: bold;
             }
             QProgressBar::chunk {
-                background: #ff0000;
-                border-radius: 4px;
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+                    stop:0 #ff0000, stop:1 #ff4444);
+                border-radius: 2px;
             }
         """)
         layout.addWidget(self.confidence_bar)
@@ -265,15 +304,15 @@ class LearningStatsWidget(QFrame):
     def update_stats(self, stats: dict):
         """Update displayed statistics."""
         if not stats.get("has_data", False):
-            self.laps_label.setText("Tours enregistrés: 0")
-            self.best_time_label.setText("Meilleur temps: --")
-            self.consistency_label.setText("Constance: --")
+            self.laps_value.setText("0")
+            self.best_time_value.setText("--")
+            self.consistency_value.setText("--")
             self.confidence_bar.setValue(0)
             return
         
-        self.laps_label.setText(f"Tours enregistrés: {stats['total_laps']}")
-        self.best_time_label.setText(f"Meilleur temps: {stats['your_best']:.3f}s")
-        self.consistency_label.setText(f"Constance: ±{stats['consistency']:.3f}s")
+        self.laps_value.setText(str(stats['total_laps']))
+        self.best_time_value.setText(f"{stats['your_best']:.3f}s")
+        self.consistency_value.setText(f"±{stats['consistency']:.3f}s")
         
         # Calculate confidence (0-100%)
         confidence = min(stats['total_laps'] / 50.0 * 100, 100)
@@ -281,7 +320,7 @@ class LearningStatsWidget(QFrame):
 
 
 class PerformanceComparisonWidget(QFrame):
-    """Widget showing performance comparison with community."""
+    """Widget showing performance comparison - simplified."""
     
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -292,70 +331,68 @@ class PerformanceComparisonWidget(QFrame):
         self.setFrameStyle(QFrame.NoFrame)
         self.setStyleSheet("""
             QFrame {
-                background: rgba(26, 0, 0, 0.3);
+                background: rgba(255, 255, 255, 0.02);
                 border: none;
-                border-radius: 8px;
-                padding: 20px;
+                border-left: 3px solid #ff0000;
+                border-radius: 0px;
+                padding: 25px 30px;
             }
         """)
         
         layout = QVBoxLayout(self)
-        layout.setSpacing(15)
+        layout.setSpacing(12)
         
         # Title
-        title = QLabel("📊 Comparaison")
+        title = QLabel("PERFORMANCE")
         title.setStyleSheet("""
             color: #ff0000;
-            font-size: 18px;
+            font-size: 13px;
             font-weight: bold;
-            margin-bottom: 10px;
+            letter-spacing: 2px;
+            margin-bottom: 5px;
         """)
         layout.addWidget(title)
         
-        # Rank label
-        self.rank_label = QLabel("Classement: --")
-        self.rank_label.setStyleSheet("color: #ffffff; font-size: 16px; font-weight: bold;")
+        # Comparison info
+        self.comparison_label = QLabel("Complete more laps to see comparison")
+        self.comparison_label.setStyleSheet("""
+            color: #666666;
+            font-size: 12px;
+            font-style: italic;
+        """)
+        self.comparison_label.setWordWrap(True)
+        layout.addWidget(self.comparison_label)
+        
+        # Rank estimate
+        self.rank_label = QLabel("")
+        self.rank_label.setStyleSheet("""
+            color: #ffffff;
+            font-size: 16px;
+            font-weight: bold;
+        """)
+        self.rank_label.setAlignment(Qt.AlignCenter)
         layout.addWidget(self.rank_label)
-        
-        # Percentile label
-        self.percentile_label = QLabel("Percentile: --")
-        self.percentile_label.setStyleSheet("color: #ffffff; font-size: 14px;")
-        layout.addWidget(self.percentile_label)
-        
-        # Improvement potential
-        self.improvement_label = QLabel("Potentiel: --")
-        self.improvement_label.setStyleSheet("color: #ffaa00; font-size: 14px;")
-        layout.addWidget(self.improvement_label)
-        
-        # Info text
-        info = QLabel("Basé sur tes performances enregistrées")
-        info.setStyleSheet("color: #888; font-size: 11px; font-style: italic;")
-        info.setWordWrap(True)
-        layout.addWidget(info)
     
     def update_comparison(self, stats: dict):
         """Update comparison display."""
         if not stats.get("has_data", False):
-            self.rank_label.setText("Classement: --")
-            self.percentile_label.setText("Percentile: --")
-            self.improvement_label.setText("Potentiel: --")
+            self.comparison_label.setText("Complete more laps to see comparison")
+            self.rank_label.setText("")
             return
         
-        self.rank_label.setText(f"Classement: {stats['rank_estimate']}")
-        self.percentile_label.setText(f"Percentile: {stats['percentile']:.1f}%")
+        rank = stats.get("rank_estimate", "N/A")
+        percentile = stats.get("percentile", 0)
         
-        if stats['improvement_potential'] > 0:
-            self.improvement_label.setText(
-                f"Potentiel: -{stats['improvement_potential']:.3f}s"
-            )
-        else:
-            self.improvement_label.setText("Potentiel: Tu es au top! 🏆")
+        self.rank_label.setText(f"🏆 {rank}")
+        self.comparison_label.setText(
+            f"You're faster than {percentile:.0f}% of drivers on this combo"
+        )
 
 
 class AdaptivePanel(QWidget):
-    """Main panel for adaptive AI features."""
+    """Main adaptive setup panel - simplified and cleaner."""
     
-    apply_adaptive = Signal()
+    apply_optimization = Signal()
     
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -364,70 +401,97 @@ class AdaptivePanel(QWidget):
     def _setup_ui(self):
         """Set up the UI."""
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(25, 25, 25, 25)
-        layout.setSpacing(20)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)
         
-        # Title
-        title = QLabel("🤖 IA Adaptive")
+        # Header
+        header = QFrame()
+        header.setStyleSheet("""
+            QFrame {
+                background: #000000;
+                border-bottom: 1px solid rgba(255, 0, 0, 0.15);
+            }
+        """)
+        header_layout = QHBoxLayout(header)
+        header_layout.setContentsMargins(40, 15, 40, 15)
+        
+        title = QLabel("ADAPTIVE AI")
         title.setStyleSheet("""
             color: #ff0000;
-            font-size: 24px;
+            font-family: 'Arial', sans-serif;
+            font-size: 14px;
             font-weight: bold;
-            margin-bottom: 10px;
+            letter-spacing: 3px;
         """)
-        layout.addWidget(title)
+        header_layout.addWidget(title)
+        header_layout.addStretch()
         
-        # Description
-        desc = QLabel(
-            "L'IA apprend de ton style de conduite et adapte les setups "
-            "aux conditions de piste en temps réel."
-        )
-        desc.setStyleSheet("color: #cccccc; font-size: 13px;")
-        desc.setWordWrap(True)
-        layout.addWidget(desc)
+        layout.addWidget(header)
+        
+        # Content area
+        content = QWidget()
+        content.setStyleSheet("background: #0a0a0a;")
+        content_layout = QVBoxLayout(content)
+        content_layout.setContentsMargins(30, 30, 30, 30)
+        content_layout.setSpacing(20)
         
         # Conditions widget
         self.conditions_widget = ConditionsWidget()
-        layout.addWidget(self.conditions_widget)
+        content_layout.addWidget(self.conditions_widget)
         
-        # Learning stats
+        # Learning stats widget
         self.learning_stats = LearningStatsWidget()
-        layout.addWidget(self.learning_stats)
+        content_layout.addWidget(self.learning_stats)
         
         # Performance comparison
         self.performance_comparison = PerformanceComparisonWidget()
-        layout.addWidget(self.performance_comparison)
+        content_layout.addWidget(self.performance_comparison)
         
         # Apply button
-        self.apply_button = QPushButton("⚡ Appliquer l'Optimisation IA")
-        self.apply_button.clicked.connect(self.apply_adaptive.emit)
-        self.apply_button.setMinimumHeight(55)
+        self.apply_button = QPushButton("⚡ APPLY AI OPTIMIZATION")
+        self.apply_button.clicked.connect(self.apply_optimization.emit)
+        self.apply_button.setMinimumHeight(50)
         self.apply_button.setStyleSheet("""
             QPushButton {
-                background: #ff0000;
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                    stop:0 #ff0000, stop:1 #cc0000);
                 color: #ffffff;
                 border: none;
-                border-radius: 8px;
-                font-size: 18px;
+                border-radius: 6px;
+                font-size: 15px;
                 font-weight: bold;
-                padding: 15px;
+                letter-spacing: 1px;
             }
             QPushButton:hover {
-                background: #ff3333;
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                    stop:0 #ff3333, stop:1 #ff0000);
             }
             QPushButton:pressed {
-                background: #cc0000;
+                background: #990000;
+            }
+            QPushButton:disabled {
+                background: #333333;
+                color: #666666;
             }
         """)
-        layout.addWidget(self.apply_button)
+        content_layout.addWidget(self.apply_button)
         
-        layout.addStretch()
+        content_layout.addStretch()
+        
+        layout.addWidget(content)
     
     def update_stats(self, stats: dict):
-        """Update all statistics."""
+        """Update learning statistics."""
         self.learning_stats.update_stats(stats)
         self.performance_comparison.update_comparison(stats)
+        
+        # Enable/disable apply button based on confidence
+        if stats.get("has_data", False):
+            confidence = min(stats['total_laps'] / 50.0 * 100, 100)
+            self.apply_button.setEnabled(confidence >= 20)
+        else:
+            self.apply_button.setEnabled(False)
     
     def get_conditions(self) -> dict:
-        """Get current conditions."""
+        """Get current track conditions."""
         return self.conditions_widget.get_conditions()

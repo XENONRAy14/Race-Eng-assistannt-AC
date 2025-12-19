@@ -16,13 +16,13 @@ from PySide6.QtGui import QFont, QColor, QPalette
 from typing import Optional
 from pathlib import Path
 
-from ui.car_track_selector_v2 import CarTrackSelector
+from ui.car_track_selector import CarTrackSelector
 from ui.behavior_selector import BehaviorSelector
-from ui.sliders_panel_v2 import SlidersPanel
-from ui.telemetry_panel_v2 import TelemetryPanel, TelemetryData
+from ui.sliders_panel import SlidersPanel
+from ui.telemetry_panel import TelemetryPanel, TelemetryData
 from ui.presets_panel import PresetsPanel
-from ui.driving_style_widget_v2 import DrivingStyleWidget
-from ui.track_map_widget_v2 import TrackMapWidget
+from ui.driving_style_widget import DrivingStyleWidget
+from ui.track_map_widget import TrackMapWidget
 
 from models.driver_profile import DriverProfile
 from models.setup import Setup
@@ -554,7 +554,7 @@ class MainWindow(QMainWindow):
         self.right_tabs.addTab(self.presets_panel, "⭐ Presets")
         
         # Tab 6: Adaptive IA
-        from ui.adaptive_panel_v2 import AdaptivePanel
+        from ui.adaptive_panel import AdaptivePanel
         self.adaptive_panel = AdaptivePanel()
         self.adaptive_panel.apply_optimization.connect(self._on_apply_adaptive)
         self.right_tabs.addTab(self.adaptive_panel, "🤖 IA Adaptive")
