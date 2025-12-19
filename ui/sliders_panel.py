@@ -337,14 +337,24 @@ class SlidersPanel(QWidget):
         if "diff_aggression" in prefs:
             self.diff_aggression_slider.set_value(prefs["diff_aggression"])
     
+    def set_profile(self, profile: DriverProfile) -> None:
+        """Set sliders from driver profile."""
+        # Map DriverProfile attributes to slider values
+        # DriverProfile uses different attribute names, so we'll use safe defaults
+        self.aggression_slider.set_value(profile.safety_aggression if hasattr(profile, 'safety_aggression') else 50.0)
+        self.stability_slider.set_value(profile.stability_rotation if hasattr(profile, 'stability_rotation') else 50.0)
+        self.downforce_slider.set_value(profile.comfort_performance if hasattr(profile, 'comfort_performance') else 50.0)
+        
+        # Advanced sliders
+        if hasattr(profile, 'grip_slide'):
+            self.oversteer_slider.set_value(profile.grip_slide)
+        if hasattr(profile, 'drift_grip'):
+            self.brake_bias_slider.set_value(100 - profile.drift_grip)  # Invert for brake bias
+        self.diff_aggression_slider.set_value(50.0)  # Default
+    
     def load_from_profile(self, profile: DriverProfile) -> None:
-        """Load preferences from driver profile."""
-        self.aggression_slider.set_value(profile.aggression * 100)
-        self.stability_slider.set_value(profile.stability * 100)
-        self.downforce_slider.set_value(profile.downforce_preference * 100)
-        self.oversteer_slider.set_value(profile.oversteer_tendency * 100)
-        self.brake_bias_slider.set_value(profile.brake_bias * 100)
-        self.diff_aggression_slider.set_value(profile.diff_aggression * 100)
+        """Load preferences from driver profile (alias for set_profile)."""
+        self.set_profile(profile)
     
     def apply_to_profile(self, profile: DriverProfile) -> None:
         """Apply current preferences to driver profile."""
