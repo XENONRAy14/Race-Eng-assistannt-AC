@@ -1204,7 +1204,18 @@ class MainWindow(QMainWindow):
             
             live_data = self.shared_memory.get_live_data()
             
-            if live_data.is_connected and live_data.status in [ACStatus.AC_LIVE, ACStatus.AC_PAUSE, ACStatus.AC_REPLAY]:
+            # Check if we're actually in a session:
+            # - Must be connected to shared memory
+            # - Must have car and track loaded
+            # - Either status is LIVE/PAUSE/REPLAY OR we have active telemetry (RPM > 0)
+            is_in_session = (
+                live_data.is_connected and 
+                live_data.car_model and 
+                live_data.track and
+                (live_data.status in [ACStatus.AC_LIVE, ACStatus.AC_PAUSE, ACStatus.AC_REPLAY] or live_data.rpm > 0)
+            )
+            
+            if is_in_session:
                 # Game is running (live, paused, or replay)
                 self._update_game_status(live_data)
                 
@@ -1215,30 +1226,29 @@ class MainWindow(QMainWindow):
                 self._record_lap_data(live_data)
                 
                 # Check for car/track change
-                if live_data.car_model and live_data.track:
-                    if (live_data.car_model != self._last_detected_car or 
-                        live_data.track != self._last_detected_track):
-                        
-                        self._last_detected_car = live_data.car_model
-                        self._last_detected_track = live_data.track
-                        
-                        # Reset track map for new track
-                        self._track_map_initialized = False
-                        self._last_sector_index = -1
-                        
-                        # Auto-select in UI
-                        self._auto_select_car_track(
-                            live_data.car_model, 
-                            live_data.track,
-                            live_data.track_config
-                        )
-            elif live_data.is_connected and live_data.status == ACStatus.AC_OFF:
-                # Connected but game in menu/loading
-                self.game_status_label.setText("🎮 AC: En menu")
+                if (live_data.car_model != self._last_detected_car or 
+                    live_data.track != self._last_detected_track):
+                    
+                    self._last_detected_car = live_data.car_model
+                    self._last_detected_track = live_data.track
+                    
+                    # Reset track map for new track
+                    self._track_map_initialized = False
+                    self._last_sector_index = -1
+                    
+                    # Auto-select in UI
+                    self._auto_select_car_track(
+                        live_data.car_model, 
+                        live_data.track,
+                        live_data.track_config
+                    )
+            elif live_data.is_connected and live_data.car_model and live_data.track:
+                # Connected, car/track loaded but not in session (menu/loading)
+                self.game_status_label.setText(f"🎮 AC: {live_data.car_model[:20]} @ {live_data.track[:20]}")
                 self.game_status_label.setStyleSheet("color: #FF9800;")
             elif live_data.is_connected:
-                # Connected but unknown status - still show as connected
-                self.game_status_label.setText("🎮 AC: Connecté")
+                # Connected but no car/track - in main menu
+                self.game_status_label.setText("🎮 AC: En menu")
                 self.game_status_label.setStyleSheet("color: #FF9800;")
             else:
                 # Not connected - disconnect to retry next poll
