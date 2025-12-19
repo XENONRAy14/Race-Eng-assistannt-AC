@@ -117,13 +117,17 @@ class SetupWriter:
         return f"rea_{behavior_clean}_{timestamp}"
     
     def _setup_to_ini(self, setup: Setup) -> str:
-        """Convert a Setup object to AC INI format string."""
-        # AC format: each parameter is its own section with VALUE=
+        """Convert a Setup object to AC INI format string.
+        
+        AC format uses one section per parameter with VALUE=<integer>
+        Values are slider indices, not actual physical values.
+        """
         lines = []
         
-        # Mapping from our internal format to AC format
+        # Mapping from our internal format to AC parameter names
+        # Format: (section, key) -> ac_param_name
         param_mapping = {
-            # Tyres
+            # Tyres - pressure values are already slider indices (typically 20-30)
             ("TYRES", "PRESSURE_LF"): "PRESSURE_LF",
             ("TYRES", "PRESSURE_RF"): "PRESSURE_RF",
             ("TYRES", "PRESSURE_LR"): "PRESSURE_LR",
@@ -132,11 +136,11 @@ class SetupWriter:
             ("BRAKES", "BIAS"): "FRONT_BIAS",
             ("BRAKES", "FRONT_BIAS"): "FRONT_BIAS",
             ("BRAKES", "BRAKE_POWER_MULT"): "BRAKE_POWER_MULT",
-            # Suspension
-            ("SUSPENSION", "SPRING_RATE_LF"): "SPRING_RATE_LF",
-            ("SUSPENSION", "SPRING_RATE_RF"): "SPRING_RATE_RF",
-            ("SUSPENSION", "SPRING_RATE_LR"): "SPRING_RATE_LR",
-            ("SUSPENSION", "SPRING_RATE_RR"): "SPRING_RATE_RR",
+            # Suspension - ride height maps to ROD_LENGTH
+            ("SUSPENSION", "RIDE_HEIGHT_LF"): "ROD_LENGTH_LF",
+            ("SUSPENSION", "RIDE_HEIGHT_RF"): "ROD_LENGTH_RF",
+            ("SUSPENSION", "RIDE_HEIGHT_LR"): "ROD_LENGTH_LR",
+            ("SUSPENSION", "RIDE_HEIGHT_RR"): "ROD_LENGTH_RR",
             ("SUSPENSION", "DAMP_BUMP_LF"): "DAMP_BUMP_LF",
             ("SUSPENSION", "DAMP_BUMP_RF"): "DAMP_BUMP_RF",
             ("SUSPENSION", "DAMP_BUMP_LR"): "DAMP_BUMP_LR",
@@ -145,15 +149,7 @@ class SetupWriter:
             ("SUSPENSION", "DAMP_REBOUND_RF"): "DAMP_REBOUND_RF",
             ("SUSPENSION", "DAMP_REBOUND_LR"): "DAMP_REBOUND_LR",
             ("SUSPENSION", "DAMP_REBOUND_RR"): "DAMP_REBOUND_RR",
-            ("SUSPENSION", "RIDE_HEIGHT_LF"): "ROD_LENGTH_LF",
-            ("SUSPENSION", "RIDE_HEIGHT_RF"): "ROD_LENGTH_RF",
-            ("SUSPENSION", "RIDE_HEIGHT_LR"): "ROD_LENGTH_LR",
-            ("SUSPENSION", "RIDE_HEIGHT_RR"): "ROD_LENGTH_RR",
-            # Differential
-            ("DIFFERENTIAL", "POWER"): "DIFF_POWER",
-            ("DIFFERENTIAL", "COAST"): "DIFF_COAST",
-            ("DIFFERENTIAL", "PRELOAD"): "DIFF_PRELOAD",
-            # Alignment
+            # Alignment - camber and toe
             ("ALIGNMENT", "CAMBER_LF"): "CAMBER_LF",
             ("ALIGNMENT", "CAMBER_RF"): "CAMBER_RF",
             ("ALIGNMENT", "CAMBER_LR"): "CAMBER_LR",
@@ -169,30 +165,92 @@ class SetupWriter:
             ("FUEL", "FUEL"): "FUEL",
         }
         
+        # Value conversion functions - convert real values to slider indices
+        # These are approximations based on typical AC car ranges
+        def convert_pressure(val):
+            # Pressure is typically stored as psi * 1 (e.g., 26.0 -> 26)
+            return int(round(val))
+        
+        def convert_camber(val):
+            # Camber is typically stored as degrees * 10 (e.g., -3.5 -> -35)
+            return int(round(val * 10))
+        
+        def convert_toe(val):
+            # Toe is typically stored as degrees * 100 (e.g., 0.15 -> 15)
+            return int(round(val * 100))
+        
+        def convert_ride_height(val):
+            # Ride height/rod length - typically direct mm value
+            return int(round(val))
+        
+        def convert_damper(val):
+            # Dampers - convert from N/m/s to slider index
+            # Typical range: 1000-10000 N/m/s maps to ~5-20 clicks
+            return int(round(val / 500))  # Rough approximation
+        
+        def convert_arb(val):
+            # ARB - typically stored as N/mm directly or as index
+            return int(round(val * 1000)) if val < 100 else int(round(val))
+        
+        def convert_default(val):
+            # Default: just round to int
+            if isinstance(val, float):
+                return int(round(val))
+            return val
+        
+        # Conversion map
+        converters = {
+            "PRESSURE_LF": convert_pressure,
+            "PRESSURE_RF": convert_pressure,
+            "PRESSURE_LR": convert_pressure,
+            "PRESSURE_RR": convert_pressure,
+            "CAMBER_LF": convert_camber,
+            "CAMBER_RF": convert_camber,
+            "CAMBER_LR": convert_camber,
+            "CAMBER_RR": convert_camber,
+            "TOE_OUT_LF": convert_toe,
+            "TOE_OUT_RF": convert_toe,
+            "TOE_OUT_LR": convert_toe,
+            "TOE_OUT_RR": convert_toe,
+            "ROD_LENGTH_LF": convert_ride_height,
+            "ROD_LENGTH_RF": convert_ride_height,
+            "ROD_LENGTH_LR": convert_ride_height,
+            "ROD_LENGTH_RR": convert_ride_height,
+            "DAMP_BUMP_LF": convert_damper,
+            "DAMP_BUMP_RF": convert_damper,
+            "DAMP_BUMP_LR": convert_damper,
+            "DAMP_BUMP_RR": convert_damper,
+            "DAMP_REBOUND_LF": convert_damper,
+            "DAMP_REBOUND_RF": convert_damper,
+            "DAMP_REBOUND_LR": convert_damper,
+            "DAMP_REBOUND_RR": convert_damper,
+            "ARB_FRONT": convert_arb,
+            "ARB_REAR": convert_arb,
+        }
+        
         written_params = set()
         
-        # Write each parameter as its own section
+        # Write each parameter as its own section (AC format)
         for section_name, section in setup.sections.items():
             for key, value in section.values.items():
                 # Get AC parameter name
                 ac_param = param_mapping.get((section_name, key))
                 if not ac_param:
-                    # Try direct key name
+                    # Try direct key name for unmapped params
                     ac_param = key
                 
+                # Skip duplicates
                 if ac_param in written_params:
                     continue
                 written_params.add(ac_param)
                 
-                # Format value - AC uses integers for most values
-                if isinstance(value, float):
-                    # Convert to int for AC (it uses slider indices, not actual values)
-                    formatted_value = str(int(round(value)))
-                else:
-                    formatted_value = str(value)
+                # Convert value using appropriate converter
+                converter = converters.get(ac_param, convert_default)
+                converted_value = converter(value)
                 
+                # Write in AC format: [PARAM_NAME]\nVALUE=<int>
                 lines.append(f"[{ac_param}]")
-                lines.append(f"VALUE={formatted_value}")
+                lines.append(f"VALUE={converted_value}")
                 lines.append("")
         
         # Add car model section
@@ -200,6 +258,11 @@ class SetupWriter:
             lines.append("[CAR]")
             lines.append(f"MODEL={setup.car_id}")
             lines.append("")
+        
+        # Add CSP/patch version for compatibility
+        lines.append("[__EXT_PATCH]")
+        lines.append("VERSION=0.2.5-preview1")
+        lines.append("")
         
         return "\n".join(lines)
     
