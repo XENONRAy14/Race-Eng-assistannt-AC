@@ -1204,6 +1204,13 @@ class MainWindow(QMainWindow):
             
             live_data = self.shared_memory.get_live_data()
             
+            # Debug logging
+            print(f"[DEBUG] is_connected: {live_data.is_connected}")
+            print(f"[DEBUG] car_model: '{live_data.car_model}'")
+            print(f"[DEBUG] track: '{live_data.track}'")
+            print(f"[DEBUG] status: {live_data.status}")
+            print(f"[DEBUG] rpm: {live_data.rpm}")
+            
             # Check if we're actually in a session:
             # - Must be connected to shared memory
             # - Must have car and track loaded
@@ -1214,6 +1221,8 @@ class MainWindow(QMainWindow):
                 live_data.track and
                 (live_data.status in [ACStatus.AC_LIVE, ACStatus.AC_PAUSE, ACStatus.AC_REPLAY] or live_data.rpm > 0)
             )
+            
+            print(f"[DEBUG] is_in_session: {is_in_session}")
             
             if is_in_session:
                 # Game is running (live, paused, or replay)
