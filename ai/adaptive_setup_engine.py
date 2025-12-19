@@ -281,6 +281,51 @@ class AdaptiveSetupEngine:
         
         return setup
     
+    def record_lap(self, car_id: str, track_id: str, lap_time: float, conditions: TrackConditions = None):
+        """
+        Record a lap time for learning.
+        
+        Args:
+            car_id: Car identifier
+            track_id: Track identifier
+            lap_time: Lap time in seconds
+            conditions: Track conditions (optional)
+        """
+        key = f"{car_id}_{track_id}"
+        
+        # Initialize data structure if needed
+        if key not in self.learning_data:
+            self.learning_data[key] = {
+                "best_time": lap_time,
+                "total_laps": 0,
+                "lap_times": [],
+                "avg_consistency": 0.0,
+                "best_setup_params": {}
+            }
+        
+        data = self.learning_data[key]
+        
+        # Update lap data
+        data["total_laps"] += 1
+        data["lap_times"].append(lap_time)
+        
+        # Keep only last 50 laps for consistency calculation
+        if len(data["lap_times"]) > 50:
+            data["lap_times"] = data["lap_times"][-50:]
+        
+        # Update best time
+        if lap_time < data["best_time"]:
+            data["best_time"] = lap_time
+        
+        # Calculate consistency (standard deviation)
+        if len(data["lap_times"]) > 1:
+            avg = sum(data["lap_times"]) / len(data["lap_times"])
+            variance = sum((t - avg) ** 2 for t in data["lap_times"]) / len(data["lap_times"])
+            data["avg_consistency"] = variance ** 0.5
+        
+        # Save to disk
+        self._save_learning_data()
+    
     def get_performance_stats(self, car_id: str, track_id: str) -> dict:
         """Get performance statistics for comparison."""
         key = f"{car_id}_{track_id}"
