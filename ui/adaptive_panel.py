@@ -25,14 +25,12 @@ class ConditionsWidget(QFrame):
         self.setStyleSheet("""
             QFrame {
                 background: rgba(255, 255, 255, 0.02);
-                border: none;
                 border-left: 3px solid #ff0000;
-                border-radius: 0px;
-                padding: 25px 30px;
             }
         """)
         
         layout = QVBoxLayout(self)
+        layout.setContentsMargins(20, 15, 20, 15)
         layout.setSpacing(18)
         
         # Title
@@ -211,14 +209,12 @@ class LearningStatsWidget(QFrame):
         self.setStyleSheet("""
             QFrame {
                 background: rgba(255, 255, 255, 0.02);
-                border: none;
                 border-left: 3px solid #ff0000;
-                border-radius: 0px;
-                padding: 25px 30px;
             }
         """)
         
         layout = QVBoxLayout(self)
+        layout.setContentsMargins(20, 15, 20, 15)
         layout.setSpacing(15)
         
         # Title
@@ -403,14 +399,12 @@ class PerformanceComparisonWidget(QFrame):
         self.setStyleSheet("""
             QFrame {
                 background: rgba(255, 255, 255, 0.02);
-                border: none;
                 border-left: 3px solid #ff0000;
-                border-radius: 0px;
-                padding: 25px 30px;
             }
         """)
         
         layout = QVBoxLayout(self)
+        layout.setContentsMargins(20, 15, 20, 15)
         layout.setSpacing(12)
         
         # Title
