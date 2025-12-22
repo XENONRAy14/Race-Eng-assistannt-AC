@@ -185,18 +185,28 @@ class ACDetector:
         Returns list of Car objects.
         """
         if self._cars_cache and not force_refresh:
+            print(f"[SCAN_CARS] Using cache: {len(self._cars_cache)} cars")
             return list(self._cars_cache.values())
         
         self._cars_cache.clear()
         installation = self.get_installation()
         
-        if not installation or not installation.cars_path:
+        if not installation:
+            print(f"[SCAN_CARS] No installation found")
+            return []
+        
+        if not installation.cars_path:
+            print(f"[SCAN_CARS] No cars_path in installation")
             return []
         
         cars_path = installation.cars_path
+        print(f"[SCAN_CARS] Scanning path: {cars_path}")
+        
         if not cars_path.exists():
+            print(f"[SCAN_CARS] Path does not exist: {cars_path}")
             return []
         
+        car_count = 0
         for car_dir in cars_path.iterdir():
             if not car_dir.is_dir():
                 continue
@@ -204,7 +214,9 @@ class ACDetector:
             car = self._parse_car(car_dir)
             if car:
                 self._cars_cache[car.car_id] = car
+                car_count += 1
         
+        print(f"[SCAN_CARS] Found {car_count} cars")
         return list(self._cars_cache.values())
     
     def _parse_car(self, car_dir: Path) -> Optional[Car]:
@@ -283,45 +295,56 @@ class ACDetector:
         Returns list of Track objects.
         """
         if self._tracks_cache and not force_refresh:
+            print(f"[SCAN_TRACKS] Using cache: {len(self._tracks_cache)} tracks")
             return list(self._tracks_cache.values())
         
         self._tracks_cache.clear()
         installation = self.get_installation()
         
-        if not installation or not installation.tracks_path:
+        if not installation:
+            print(f"[SCAN_TRACKS] No installation found")
+            return []
+        
+        if not installation.tracks_path:
+            print(f"[SCAN_TRACKS] No tracks_path in installation")
             return []
         
         tracks_path = installation.tracks_path
+        print(f"[SCAN_TRACKS] Scanning path: {tracks_path}")
+        
         if not tracks_path.exists():
+            print(f"[SCAN_TRACKS] Path does not exist: {tracks_path}")
             return []
         
+        track_count = 0
         for track_dir in tracks_path.iterdir():
             if not track_dir.is_dir():
                 continue
             
             # Check for track configurations
             ui_dir = track_dir / "ui"
-            if not ui_dir.exists():
-                continue
-            
-            # Check for multiple layouts
-            layouts = []
-            for item in ui_dir.iterdir():
-                if item.is_dir() and (item / "ui_track.json").exists():
-                    layouts.append(item.name)
-            
-            if layouts:
-                # Multiple layouts
-                for layout in layouts:
-                    track = self._parse_track(track_dir, layout)
-                    if track:
-                        self._tracks_cache[track.full_id] = track
-            else:
-                # Single layout
-                track = self._parse_track(track_dir, "")
+            if ui_dir.exists():
+                # Single layout track
+                track = self._parse_track(track_dir)
                 if track:
-                    self._tracks_cache[track.full_id] = track
+                    track_key = f"{track.track_id}_{track.config}" if track.config else track.track_id
+                    self._tracks_cache[track_key] = track
+                    track_count += 1
+            
+            # Check for multi-layout tracks
+            for config_dir in track_dir.iterdir():
+                if not config_dir.is_dir():
+                    continue
+                
+                ui_dir = config_dir / "ui"
+                if ui_dir.exists():
+                    track = self._parse_track(track_dir, config_dir.name)
+                    if track:
+                        track_key = f"{track.track_id}_{track.config}"
+                        self._tracks_cache[track_key] = track
+                        track_count += 1
         
+        print(f"[SCAN_TRACKS] Found {track_count} tracks")
         return list(self._tracks_cache.values())
     
     def _parse_track(self, track_dir: Path, config: str) -> Optional[Track]:

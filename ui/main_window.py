@@ -1141,21 +1141,42 @@ class MainWindow(QMainWindow):
     
     def _on_generate_clicked(self) -> None:
         """Handle generate button click."""
+        print(f"[GENERATE] _cars_cache: {len(self._cars_cache) if self._cars_cache else 0}")
+        print(f"[GENERATE] _tracks_cache: {len(self._tracks_cache) if self._tracks_cache else 0}")
+        
         # Check if AC is connected and cars/tracks are loaded
         if not self._cars_cache or not self._tracks_cache:
             # Try to load cars/tracks if not already loaded
-            if self.connector.is_connected():
+            print(f"[GENERATE] Caches empty, checking connection...")
+            is_conn = self.connector.is_connected()
+            print(f"[GENERATE] connector.is_connected(): {is_conn}")
+            
+            if is_conn:
+                print(f"[GENERATE] Loading cars and tracks...")
                 cars = self.connector.get_cars()
                 tracks = self.connector.get_tracks()
+                print(f"[GENERATE] Loaded {len(cars) if cars else 0} cars, {len(tracks) if tracks else 0} tracks")
+                
                 if cars and tracks:
                     self._cars_cache = cars
                     self._tracks_cache = tracks
                     self.car_track_selector.set_cars(cars)
                     self.car_track_selector.set_tracks(tracks)
                     self.statusbar.showMessage(f"Chargé: {len(cars)} voitures, {len(tracks)} pistes")
+                else:
+                    print(f"[GENERATE] WARNING: get_cars or get_tracks returned empty!")
+            else:
+                print(f"[GENERATE] Not connected to AC")
             
             # If still empty, show error
             if not self._cars_cache or not self._tracks_cache:
+                status = self.connector.get_status()
+                error_details = f"Status: is_connected={status.is_connected}\n"
+                error_details += f"Game path: {status.game_path}\n"
+                error_details += f"Cars count: {status.cars_count}\n"
+                error_details += f"Tracks count: {status.tracks_count}\n"
+                print(f"[GENERATE] Error details:\n{error_details}")
+                
                 QMessageBox.warning(
                     self,
                     "Assetto Corsa non connecté",
@@ -1163,7 +1184,8 @@ class MainWindow(QMainWindow):
                     "Assurez-vous que :\n"
                     "1. Assetto Corsa est installé\n"
                     "2. Le chemin d'installation est configuré dans Paramètres\n\n"
-                    "Allez dans Paramètres → Sélectionner le dossier AC"
+                    "Allez dans Paramètres → Sélectionner le dossier AC\n\n"
+                    f"Debug:\n{error_details}"
                 )
                 return
         
