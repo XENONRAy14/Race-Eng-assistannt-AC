@@ -1352,56 +1352,77 @@ class MainWindow(QMainWindow):
             self.track_map_widget.update_delta(delta)
     
     def _record_lap_data(self, live_data) -> None:
-        """Record lap data for AI learning."""
-        # Debug: show current state
-        if hasattr(live_data, 'completed_laps') and live_data.completed_laps > 0:
-            if live_data.completed_laps != self._last_completed_laps:
-                print(f"[DEBUG LAP] completed_laps={live_data.completed_laps}, last={self._last_completed_laps}, last_lap_time_ms={live_data.last_lap_time_ms}")
+        """Record lap data for AI learning.
         
-        # Check if a new lap was completed
+        Supports:
+        - Circuit tracks: detection via completedLaps increment
+        - Point-to-point tracks with timing: detection via lastTime change
+        - Freeroam maps: not supported (no timing data available)
+        """
+        lap_detected = False
+        lap_time_ms = 0
+        lap_number = 0
+        
+        # Initialize tracking attributes
+        if not hasattr(self, '_last_recorded_lap_time_ms'):
+            self._last_recorded_lap_time_ms = 0
+            self._point_to_point_run_count = 0
+        
+        # Method 1: Standard lap detection via completedLaps (for circuits)
         if live_data.completed_laps > self._last_completed_laps:
-            # New lap completed!
+            lap_detected = True
             lap_time_ms = live_data.last_lap_time_ms
-            
-            print(f"[DEBUG LAP] New lap detected! lap_time_ms={lap_time_ms}, car={live_data.car_model}, track={live_data.track}")
-            
-            if lap_time_ms > 0 and live_data.car_model and live_data.track:
-                # Record the lap
-                self.adaptive_engine.record_lap(
-                    car_id=live_data.car_model,
-                    track_id=live_data.track,
-                    lap_time=lap_time_ms / 1000.0,  # Convert to seconds
-                    conditions=self.current_conditions
-                )
-                
-                # Update adaptive panel stats
-                stats = self.adaptive_engine.get_performance_stats(
-                    live_data.car_model,
-                    live_data.track
-                )
-                self.adaptive_panel.update_stats(stats)
-                
-                # Show feedback in status bar with AI progress
-                lap_time_str = f"{lap_time_ms / 1000.0:.3f}s"
-                total_laps = stats.get('total_laps', 1)
-                confidence = min(total_laps / 50.0 * 100, 100)
-                
-                if total_laps < 3:
-                    ai_status = f"🧠 IA analyse... ({total_laps}/3 tours min)"
-                elif total_laps < 10:
-                    ai_status = f"🔍 IA apprend ({total_laps} tours)"
-                elif total_laps < 25:
-                    ai_status = f"⚡ IA optimise ({confidence:.0f}% confiance)"
-                else:
-                    ai_status = f"✅ IA prête ({confidence:.0f}% confiance)"
-                
-                self.statusbar.showMessage(
-                    f"🏁 Tour {live_data.completed_laps}: {lap_time_str} | {ai_status}"
-                )
-                
-                print(f"[AI LEARNING] Lap {live_data.completed_laps} recorded: {lap_time_str} | Confidence: {confidence:.0f}%")
-            
+            lap_number = live_data.completed_laps
             self._last_completed_laps = live_data.completed_laps
+            self._last_recorded_lap_time_ms = lap_time_ms
+            print(f"[LAP] Circuit lap detected: lap={lap_number}, time={lap_time_ms}ms")
+        
+        # Method 2: Point-to-point detection via last_lap_time_ms change
+        # Works for tracks with start/finish timing (not freeroam)
+        elif live_data.last_lap_time_ms > 0 and live_data.last_lap_time_ms != self._last_recorded_lap_time_ms:
+            self._point_to_point_run_count += 1
+            lap_detected = True
+            lap_time_ms = live_data.last_lap_time_ms
+            lap_number = self._point_to_point_run_count
+            self._last_recorded_lap_time_ms = lap_time_ms
+            print(f"[LAP] Point-to-point run detected: run={lap_number}, time={lap_time_ms}ms")
+        
+        # Record the lap if detected
+        if lap_detected and lap_time_ms > 0 and live_data.car_model and live_data.track:
+            # Record the lap
+            self.adaptive_engine.record_lap(
+                car_id=live_data.car_model,
+                track_id=live_data.track,
+                lap_time=lap_time_ms / 1000.0,  # Convert to seconds
+                conditions=self.current_conditions
+            )
+            
+            # Update adaptive panel stats
+            stats = self.adaptive_engine.get_performance_stats(
+                live_data.car_model,
+                live_data.track
+            )
+            self.adaptive_panel.update_stats(stats)
+            
+            # Show feedback in status bar with AI progress
+            lap_time_str = f"{lap_time_ms / 1000.0:.3f}s"
+            total_laps = stats.get('total_laps', 1)
+            confidence = min(total_laps / 50.0 * 100, 100)
+            
+            if total_laps < 3:
+                ai_status = f"🧠 IA analyse... ({total_laps}/3 tours min)"
+            elif total_laps < 10:
+                ai_status = f"🔍 IA apprend ({total_laps} tours)"
+            elif total_laps < 25:
+                ai_status = f"⚡ IA optimise ({confidence:.0f}% confiance)"
+            else:
+                ai_status = f"✅ IA prête ({confidence:.0f}% confiance)"
+            
+            self.statusbar.showMessage(
+                f"🏁 Tour/Run {lap_number}: {lap_time_str} | {ai_status}"
+            )
+            
+            print(f"[AI LEARNING] Lap/Run {lap_number} recorded: {lap_time_str} | Confidence: {confidence:.0f}%")
     
     def _on_quick_start_generate(self) -> None:
         """Handle quick start generate button."""

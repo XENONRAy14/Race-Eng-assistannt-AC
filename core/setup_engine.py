@@ -4,6 +4,8 @@ Combines behavior modifiers, rule adjustments, and base values.
 """
 
 from typing import Optional
+from pathlib import Path
+import configparser
 from models.setup import Setup, SetupSection
 from models.driver_profile import DriverProfile
 from models.car import Car
@@ -238,6 +240,15 @@ class SetupEngine:
         
         return setup, score
     
+    # Race car classes that should use AC default setups
+    RACE_CAR_CLASSES = [
+        "gt3", "gt2", "gt4", "gte", "gtlm",
+        "lmp1", "lmp2", "lmp3", "prototype",
+        "formula", "f1", "f2", "f3", "f4",
+        "dtm", "touring", "tcr",
+        "race", "gt"
+    ]
+    
     def _create_base_setup(
         self,
         car: Optional[Car],
@@ -253,105 +264,262 @@ class SetupEngine:
             behavior=behavior_id
         )
         
-        # Initialize with base values
+        # For race cars, try to load AC's default setup first
+        if car and self._is_race_car(car):
+            ac_setup = self._load_ac_default_setup(car)
+            if ac_setup:
+                # Use AC default setup as base
+                for section_name, section in ac_setup.sections.items():
+                    setup.sections[section_name] = SetupSection(
+                        section_name, 
+                        section.values.copy()
+                    )
+                print(f"[SETUP] Using AC default setup for {car.name}")
+                return setup
+            else:
+                print(f"[SETUP] No AC default found for {car.name}, using generic values")
+        
+        # Fallback: Initialize with generic base values (good for Touge/street cars)
         for section_name, values in self.BASE_VALUES.items():
             setup.sections[section_name] = SetupSection(section_name, values.copy())
         
         return setup
     
+    def _is_race_car(self, car: Car) -> bool:
+        """Check if car is a race car that needs AC default setup."""
+        if not car:
+            return False
+        
+        # Check car_class
+        car_class_lower = car.car_class.lower() if car.car_class else ""
+        for race_class in self.RACE_CAR_CLASSES:
+            if race_class in car_class_lower:
+                return True
+        
+        # Check car_id for common race car patterns
+        car_id_lower = car.car_id.lower()
+        race_patterns = ["_gt3", "_gt2", "_gt4", "_gte", "_lmp", "_dtm", "_tcr", "_f1", "_f2", "_f3"]
+        for pattern in race_patterns:
+            if pattern in car_id_lower:
+                return True
+        
+        # Check car name
+        name_lower = car.name.lower() if car.name else ""
+        if any(x in name_lower for x in ["gt3", "gt2", "gt4", "gte", "lmp", "dtm", "formula"]):
+            return True
+        
+        return False
+    
+    def _load_ac_default_setup(self, car: Car) -> Optional[Setup]:
+        """
+        Load the default setup from AC's car data folder.
+        Path: content/cars/{car_id}/data/setup.ini
+        """
+        if not car or not car.path:
+            return None
+        
+        # Try multiple possible locations for default setup
+        possible_paths = [
+            car.path / "data" / "setup.ini",
+            car.path / "data" / "default_setup.ini",
+            car.path / "setups" / "default.ini",
+        ]
+        
+        for setup_path in possible_paths:
+            if setup_path.exists():
+                setup = self._parse_ini_setup(setup_path, car)
+                if setup:
+                    return setup
+        
+        return None
+    
+    def _parse_ini_setup(self, file_path: Path, car: Car) -> Optional[Setup]:
+        """Parse an INI setup file into a Setup object."""
+        try:
+            config = configparser.ConfigParser()
+            config.read(file_path, encoding="utf-8")
+            
+            setup = Setup(
+                name="AC_Default",
+                car_id=car.car_id,
+                track_id=""
+            )
+            
+            for section_name in config.sections():
+                section_values = {}
+                for key, value in config.items(section_name):
+                    parsed_value = self._parse_ini_value(value)
+                    section_values[key.upper()] = parsed_value
+                
+                if section_values:
+                    setup.sections[section_name.upper()] = SetupSection(
+                        section_name.upper(), 
+                        section_values
+                    )
+            
+            return setup if setup.sections else None
+            
+        except (configparser.Error, IOError, Exception) as e:
+            print(f"[SETUP] Error parsing {file_path}: {e}")
+            return None
+    
+    def _parse_ini_value(self, value: str):
+        """Parse a string value to appropriate type."""
+        value = value.strip()
+        
+        # Try integer
+        try:
+            return int(value)
+        except ValueError:
+            pass
+        
+        # Try float
+        try:
+            return float(value)
+        except ValueError:
+            pass
+        
+        return value
+    
+    def _is_click_based_setup(self, setup: Setup) -> bool:
+        """
+        Detect if setup uses click-based values (race cars) or absolute values (street cars).
+        Click-based setups have small spring rate values (1-30), absolute have large (40000+).
+        """
+        spring_rate = setup.get_value("SUSPENSION", "SPRING_RATE_LF", None)
+        if spring_rate is None:
+            return False
+        return spring_rate < 1000  # Click-based if under 1000
+    
     def _apply_behavior_modifiers(self, setup: Setup, behavior: Behavior) -> Setup:
         """Apply behavior modifiers to the setup."""
         
-        # Suspension stiffness
+        # Detect if this is a click-based setup (race car) or absolute values (street car)
+        is_click_based = self._is_click_based_setup(setup)
+        
+        # Suspension stiffness - use smaller adjustments for click-based
         if behavior.suspension_stiffness != 0:
-            multiplier = 1.0 + (behavior.suspension_stiffness * 0.2)
-            for key in ["SPRING_RATE_LF", "SPRING_RATE_RF", "SPRING_RATE_LR", "SPRING_RATE_RR"]:
-                current = setup.get_value("SUSPENSION", key, 70000)
-                setup.set_value("SUSPENSION", key, int(current * multiplier))
+            if is_click_based:
+                # Click-based: add/subtract 1-2 clicks
+                adjustment = int(behavior.suspension_stiffness * 2)
+                for key in ["SPRING_RATE_LF", "SPRING_RATE_RF", "SPRING_RATE_LR", "SPRING_RATE_RR"]:
+                    current = setup.get_value("SUSPENSION", key, 10)
+                    setup.set_value("SUSPENSION", key, max(1, current + adjustment))
+            else:
+                # Absolute values: use multiplier
+                multiplier = 1.0 + (behavior.suspension_stiffness * 0.2)
+                for key in ["SPRING_RATE_LF", "SPRING_RATE_RF", "SPRING_RATE_LR", "SPRING_RATE_RR"]:
+                    current = setup.get_value("SUSPENSION", key, 70000)
+                    setup.set_value("SUSPENSION", key, int(current * multiplier))
         
         # Suspension damping
         if behavior.suspension_damping != 0:
-            multiplier = 1.0 + (behavior.suspension_damping * 0.15)
-            for key in ["DAMP_BUMP_LF", "DAMP_BUMP_RF", "DAMP_BUMP_LR", "DAMP_BUMP_RR",
-                       "DAMP_REBOUND_LF", "DAMP_REBOUND_RF", "DAMP_REBOUND_LR", "DAMP_REBOUND_RR"]:
-                current = setup.get_value("SUSPENSION", key, 3000)
-                setup.set_value("SUSPENSION", key, int(current * multiplier))
+            if is_click_based:
+                # Click-based: add/subtract 1-2 clicks
+                adjustment = int(behavior.suspension_damping * 2)
+                for key in ["DAMP_BUMP_LF", "DAMP_BUMP_RF", "DAMP_BUMP_LR", "DAMP_BUMP_RR",
+                           "DAMP_REBOUND_LF", "DAMP_REBOUND_RF", "DAMP_REBOUND_LR", "DAMP_REBOUND_RR"]:
+                    current = setup.get_value("SUSPENSION", key, 5)
+                    setup.set_value("SUSPENSION", key, max(1, current + adjustment))
+            else:
+                # Absolute values: use multiplier
+                multiplier = 1.0 + (behavior.suspension_damping * 0.15)
+                for key in ["DAMP_BUMP_LF", "DAMP_BUMP_RF", "DAMP_BUMP_LR", "DAMP_BUMP_RR",
+                           "DAMP_REBOUND_LF", "DAMP_REBOUND_RF", "DAMP_REBOUND_LR", "DAMP_REBOUND_RR"]:
+                    current = setup.get_value("SUSPENSION", key, 3000)
+                    setup.set_value("SUSPENSION", key, int(current * multiplier))
         
-        # Ride height
+        # Ride height - smaller adjustments for click-based
         if behavior.ride_height != 0:
-            adjustment = int(behavior.ride_height * 10)
+            if is_click_based:
+                adjustment = int(behavior.ride_height * 2)  # 1-2 clicks
+            else:
+                adjustment = int(behavior.ride_height * 10)  # 10mm
             for key in ["RIDE_HEIGHT_LF", "RIDE_HEIGHT_RF", "RIDE_HEIGHT_LR", "RIDE_HEIGHT_RR"]:
                 current = setup.get_value("SUSPENSION", key, 50)
-                setup.set_value("SUSPENSION", key, current + adjustment)
+                setup.set_value("SUSPENSION", key, max(1, current + adjustment))
         
-        # ARB
+        # ARB - same logic for both (usually click-based anyway)
         if behavior.arb_front != 0:
+            adjustment = int(behavior.arb_front * 2) if is_click_based else int(behavior.arb_front * 3)
             current = setup.get_value("ARB", "FRONT", 5)
-            setup.set_value("ARB", "FRONT", current + int(behavior.arb_front * 3))
+            setup.set_value("ARB", "FRONT", max(0, current + adjustment))
         
         if behavior.arb_rear != 0:
+            adjustment = int(behavior.arb_rear * 2) if is_click_based else int(behavior.arb_rear * 3)
             current = setup.get_value("ARB", "REAR", 4)
-            setup.set_value("ARB", "REAR", current + int(behavior.arb_rear * 3))
+            setup.set_value("ARB", "REAR", max(0, current + adjustment))
         
-        # Differential
+        # Differential - smaller adjustments for race cars
         if behavior.diff_power != 0:
             current = setup.get_value("DIFFERENTIAL", "POWER", 45)
-            setup.set_value("DIFFERENTIAL", "POWER", current + behavior.diff_power * 25)
+            adjustment = behavior.diff_power * 10 if is_click_based else behavior.diff_power * 25
+            setup.set_value("DIFFERENTIAL", "POWER", current + adjustment)
         
         if behavior.diff_coast != 0:
             current = setup.get_value("DIFFERENTIAL", "COAST", 35)
-            setup.set_value("DIFFERENTIAL", "COAST", current + behavior.diff_coast * 20)
+            adjustment = behavior.diff_coast * 8 if is_click_based else behavior.diff_coast * 20
+            setup.set_value("DIFFERENTIAL", "COAST", current + adjustment)
         
         if behavior.diff_preload != 0:
             current = setup.get_value("DIFFERENTIAL", "PRELOAD", 25)
-            setup.set_value("DIFFERENTIAL", "PRELOAD", current + behavior.diff_preload * 30)
+            adjustment = behavior.diff_preload * 10 if is_click_based else behavior.diff_preload * 30
+            setup.set_value("DIFFERENTIAL", "PRELOAD", current + adjustment)
         
-        # Camber
+        # Camber - smaller adjustments for race cars (already optimized)
         if behavior.camber_front != 0:
-            adjustment = behavior.camber_front * -1.0  # Negative = more negative camber
+            adjustment = behavior.camber_front * -0.3 if is_click_based else behavior.camber_front * -1.0
             for key in ["CAMBER_LF", "CAMBER_RF"]:
                 current = setup.get_value("ALIGNMENT", key, -3.0)
                 setup.set_value("ALIGNMENT", key, current + adjustment)
         
         if behavior.camber_rear != 0:
-            adjustment = behavior.camber_rear * -0.8
+            adjustment = behavior.camber_rear * -0.2 if is_click_based else behavior.camber_rear * -0.8
             for key in ["CAMBER_LR", "CAMBER_RR"]:
                 current = setup.get_value("ALIGNMENT", key, -2.0)
                 setup.set_value("ALIGNMENT", key, current + adjustment)
         
-        # Toe
+        # Toe - very small adjustments for race cars
         if behavior.toe_front != 0:
-            adjustment = behavior.toe_front * 0.15
+            adjustment = behavior.toe_front * 0.05 if is_click_based else behavior.toe_front * 0.15
             for key in ["TOE_LF", "TOE_RF"]:
                 current = setup.get_value("ALIGNMENT", key, 0.0)
                 setup.set_value("ALIGNMENT", key, current + adjustment)
         
         if behavior.toe_rear != 0:
-            adjustment = behavior.toe_rear * 0.15
+            adjustment = behavior.toe_rear * 0.05 if is_click_based else behavior.toe_rear * 0.15
             for key in ["TOE_LR", "TOE_RR"]:
                 current = setup.get_value("ALIGNMENT", key, 0.1)
                 setup.set_value("ALIGNMENT", key, current + adjustment)
         
-        # Brakes
+        # Brakes - smaller adjustments for race cars
         if behavior.brake_bias != 0:
             current = setup.get_value("BRAKES", "BIAS", 58)
-            setup.set_value("BRAKES", "BIAS", current + behavior.brake_bias * 5)
-            setup.set_value("BRAKES", "FRONT_BIAS", current + behavior.brake_bias * 5)
+            adjustment = behavior.brake_bias * 2 if is_click_based else behavior.brake_bias * 5
+            setup.set_value("BRAKES", "BIAS", current + adjustment)
+            setup.set_value("BRAKES", "FRONT_BIAS", current + adjustment)
         
-        # Tyre pressure
+        # Tyre pressure - smaller adjustments for race cars (more sensitive)
         if behavior.tyre_pressure != 0:
-            adjustment = behavior.tyre_pressure * 2.0
+            adjustment = behavior.tyre_pressure * 0.5 if is_click_based else behavior.tyre_pressure * 2.0
             for key in ["PRESSURE_LF", "PRESSURE_RF", "PRESSURE_LR", "PRESSURE_RR"]:
                 current = setup.get_value("TYRES", key, 26.0)
                 setup.set_value("TYRES", key, current + adjustment)
         
         # Fast dampers (follow regular damper adjustments)
         if behavior.suspension_damping != 0:
-            multiplier = 1.0 + (behavior.suspension_damping * 0.15)
-            for key in ["DAMP_FAST_BUMP_LF", "DAMP_FAST_BUMP_RF", "DAMP_FAST_BUMP_LR", "DAMP_FAST_BUMP_RR",
-                       "DAMP_FAST_REBOUND_LF", "DAMP_FAST_REBOUND_RF", "DAMP_FAST_REBOUND_LR", "DAMP_FAST_REBOUND_RR"]:
-                current = setup.get_value("SUSPENSION", key, 2000)
-                setup.set_value("SUSPENSION", key, int(current * multiplier))
+            if is_click_based:
+                adjustment = int(behavior.suspension_damping * 2)
+                for key in ["DAMP_FAST_BUMP_LF", "DAMP_FAST_BUMP_RF", "DAMP_FAST_BUMP_LR", "DAMP_FAST_BUMP_RR",
+                           "DAMP_FAST_REBOUND_LF", "DAMP_FAST_REBOUND_RF", "DAMP_FAST_REBOUND_LR", "DAMP_FAST_REBOUND_RR"]:
+                    current = setup.get_value("SUSPENSION", key, 5)
+                    setup.set_value("SUSPENSION", key, max(1, current + adjustment))
+            else:
+                multiplier = 1.0 + (behavior.suspension_damping * 0.15)
+                for key in ["DAMP_FAST_BUMP_LF", "DAMP_FAST_BUMP_RF", "DAMP_FAST_BUMP_LR", "DAMP_FAST_BUMP_RR",
+                           "DAMP_FAST_REBOUND_LF", "DAMP_FAST_REBOUND_RF", "DAMP_FAST_REBOUND_LR", "DAMP_FAST_REBOUND_RR"]:
+                    current = setup.get_value("SUSPENSION", key, 2000)
+                    setup.set_value("SUSPENSION", key, int(current * multiplier))
         
         # Aero - wing adjustments based on downforce preference
         if hasattr(behavior, 'aero_downforce') and behavior.aero_downforce != 0:

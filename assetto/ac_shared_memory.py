@@ -259,6 +259,9 @@ class ACLiveData:
     last_lap_time_ms: int = 0
     best_lap_time_ms: int = 0
     
+    # Distance tracking for point-to-point tracks
+    distance_traveled: float = 0.0
+    
     # Physics
     brake_bias: float = 0.0
     air_temp: float = 0.0
@@ -466,6 +469,7 @@ class ACSharedMemory:
             data.is_in_pit = bool(graphics.isInPit)
             data.is_in_pit_lane = bool(graphics.isInPitLane)
             data.completed_laps = graphics.completedLaps
+            data.distance_traveled = graphics.distanceTraveled
             data.current_lap_time = graphics.currentTime.strip('\x00')
             data.best_lap_time = graphics.bestTime.strip('\x00')
             data.last_lap_time = graphics.lastTime.strip('\x00')
