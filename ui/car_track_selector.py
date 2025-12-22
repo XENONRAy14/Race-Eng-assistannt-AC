@@ -208,9 +208,10 @@ class CarTrackSelector(QWidget):
     def _on_car_changed(self, index: int) -> None:
         """Handle car selection change."""
         car = self.car_combo.itemData(index)
-        self._selected_car = car
         
-        if car:
+        # Only update if we got a valid car (not None from placeholder or typing)
+        if car is not None:
+            self._selected_car = car
             info = f"🏎️ {car.name}"
             if hasattr(car, 'power_hp') and car.power_hp:
                 info += f" • {car.power_hp}hp"
@@ -218,19 +219,24 @@ class CarTrackSelector(QWidget):
                 info += f" • {car.weight_kg}kg"
             self.car_info.setText(info)
             self.car_info.setStyleSheet("color: #ffffff; font-size: 12px; margin-top: 5px;")
-        else:
+            self.carChanged.emit(car)
+        elif index == 0:
+            # Placeholder selected
+            self._selected_car = None
             self.car_info.setText("No car selected")
             self.car_info.setStyleSheet("color: #999999; font-size: 12px; margin-top: 5px;")
+            self.carChanged.emit(None)
+        # If index > 0 but car is None, user is typing - don't clear selection
         
-        self.carChanged.emit(car)
         self.selectionChanged.emit(self._selected_car, self._selected_track)
     
     def _on_track_changed(self, index: int) -> None:
         """Handle track selection change."""
         track = self.track_combo.itemData(index)
-        self._selected_track = track
         
-        if track:
+        # Only update if we got a valid track (not None from placeholder or typing)
+        if track is not None:
+            self._selected_track = track
             info = f"🏁 {track.name}"
             if track.config and track.config != "default":
                 info += f" ({track.config})"
@@ -238,11 +244,15 @@ class CarTrackSelector(QWidget):
                 info += f" • {track.length_km:.2f}km"
             self.track_info.setText(info)
             self.track_info.setStyleSheet("color: #ffffff; font-size: 12px; margin-top: 5px;")
-        else:
+            self.trackChanged.emit(track)
+        elif index == 0:
+            # Placeholder selected
+            self._selected_track = None
             self.track_info.setText("No track selected")
             self.track_info.setStyleSheet("color: #999999; font-size: 12px; margin-top: 5px;")
+            self.trackChanged.emit(None)
+        # If index > 0 but track is None, user is typing - don't clear selection
         
-        self.trackChanged.emit(track)
         self.selectionChanged.emit(self._selected_car, self._selected_track)
     
     def get_selected_car(self) -> Optional[Car]:
@@ -263,7 +273,11 @@ class CarTrackSelector(QWidget):
             car = self.car_combo.itemData(i)
             if car and car.car_id == car_id:
                 self.car_combo.setCurrentIndex(i)
+                # Force update internal state in case signal doesn't fire
+                self._selected_car = car
+                print(f"[CAR_SELECTOR] Selected car: {car.name} (index {i})")
                 return True
+        print(f"[CAR_SELECTOR] Car not found: {car_id}")
         return False
     
     def set_selected_car(self, car_id: str) -> bool:
@@ -272,12 +286,25 @@ class CarTrackSelector(QWidget):
     
     def select_track_by_id(self, track_id: str, config: str = None) -> bool:
         """Select track by ID and optional config."""
+        # Normalize config: treat None and "" as equivalent
+        config_normalized = config if config else ""
+        
         for i in range(self.track_combo.count()):
             track = self.track_combo.itemData(i)
             if track and track.track_id == track_id:
-                if config is None or track.config == config:
+                track_config_normalized = track.config if track.config else ""
+                
+                # Match if config is None/empty, or if configs match
+                if not config_normalized or track_config_normalized == config_normalized:
                     self.track_combo.setCurrentIndex(i)
+                    # Force update internal state in case signal doesn't fire
+                    self._selected_track = track
+                    print(f"[TRACK_SELECTOR] Selected track: {track.name} (config='{track.config}', index {i})")
                     return True
+                else:
+                    print(f"[TRACK_SELECTOR] Track {track_id} found but config mismatch: '{track_config_normalized}' != '{config_normalized}'")
+        
+        print(f"[TRACK_SELECTOR] Track not found: {track_id} (config={config})")
         return False
     
     def set_selected_track(self, track_id: str, config: str = None) -> bool:
