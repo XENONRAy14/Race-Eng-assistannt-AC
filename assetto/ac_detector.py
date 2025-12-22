@@ -347,7 +347,7 @@ class ACDetector:
         print(f"[SCAN_TRACKS] Found {track_count} tracks")
         return list(self._tracks_cache.values())
     
-    def _parse_track(self, track_dir: Path, config: str) -> Optional[Track]:
+    def _parse_track(self, track_dir: Path, config: str = "") -> Optional[Track]:
         """Parse a track directory and return a Track object."""
         track_id = track_dir.name
         
