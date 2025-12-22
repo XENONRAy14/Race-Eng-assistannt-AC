@@ -713,6 +713,32 @@ class MainWindow(QMainWindow):
         from PySide6.QtWidgets import QMessageBox
         from ai.adaptive_setup_engine import TrackConditions
         
+        # Check if AC is connected and cars/tracks are loaded
+        if not self._cars_cache or not self._tracks_cache:
+            # Try to load cars/tracks if not already loaded
+            if self.connector.is_connected():
+                cars = self.connector.get_cars()
+                tracks = self.connector.get_tracks()
+                if cars and tracks:
+                    self._cars_cache = cars
+                    self._tracks_cache = tracks
+                    self.car_track_selector.set_cars(cars)
+                    self.car_track_selector.set_tracks(tracks)
+                    self.statusbar.showMessage(f"Chargé: {len(cars)} voitures, {len(tracks)} pistes")
+            
+            # If still empty, show error
+            if not self._cars_cache or not self._tracks_cache:
+                QMessageBox.warning(
+                    self,
+                    "Assetto Corsa non connecté",
+                    "Impossible de charger les voitures et pistes.\n\n"
+                    "Assurez-vous que :\n"
+                    "1. Assetto Corsa est installé\n"
+                    "2. Le chemin d'installation est configuré dans Paramètres\n\n"
+                    "Allez dans Paramètres → Sélectionner le dossier AC"
+                )
+                return
+        
         car = self.car_track_selector.get_selected_car()
         track = self.car_track_selector.get_selected_track()
         
@@ -720,7 +746,7 @@ class MainWindow(QMainWindow):
             QMessageBox.warning(
                 self,
                 "Sélection manquante",
-                "Veuillez sélectionner une voiture et une piste d'abord."
+                "Veuillez sélectionner une voiture et une piste dans les listes déroulantes."
             )
             return
         
@@ -1115,12 +1141,38 @@ class MainWindow(QMainWindow):
     
     def _on_generate_clicked(self) -> None:
         """Handle generate button click."""
+        # Check if AC is connected and cars/tracks are loaded
+        if not self._cars_cache or not self._tracks_cache:
+            # Try to load cars/tracks if not already loaded
+            if self.connector.is_connected():
+                cars = self.connector.get_cars()
+                tracks = self.connector.get_tracks()
+                if cars and tracks:
+                    self._cars_cache = cars
+                    self._tracks_cache = tracks
+                    self.car_track_selector.set_cars(cars)
+                    self.car_track_selector.set_tracks(tracks)
+                    self.statusbar.showMessage(f"Chargé: {len(cars)} voitures, {len(tracks)} pistes")
+            
+            # If still empty, show error
+            if not self._cars_cache or not self._tracks_cache:
+                QMessageBox.warning(
+                    self,
+                    "Assetto Corsa non connecté",
+                    "Impossible de charger les voitures et pistes.\n\n"
+                    "Assurez-vous que :\n"
+                    "1. Assetto Corsa est installé\n"
+                    "2. Le chemin d'installation est configuré dans Paramètres\n\n"
+                    "Allez dans Paramètres → Sélectionner le dossier AC"
+                )
+                return
+        
         # Validate selection
         if not self.car_track_selector.has_valid_selection():
             QMessageBox.warning(
                 self,
                 "Sélection incomplète",
-                "Veuillez sélectionner une voiture et une piste."
+                "Veuillez sélectionner une voiture et une piste dans les listes déroulantes."
             )
             return
         
