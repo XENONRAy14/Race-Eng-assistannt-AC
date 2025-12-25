@@ -289,22 +289,26 @@ class CarTrackSelector(QWidget):
         # Normalize config: treat None and "" as equivalent
         config_normalized = config if config else ""
         
+        print(f"[TRACK_SELECTOR] Searching for track_id='{track_id}', config='{config_normalized}'")
+        
         for i in range(self.track_combo.count()):
             track = self.track_combo.itemData(i)
             if track and track.track_id == track_id:
                 track_config_normalized = track.config if track.config else ""
                 
-                # Match if config is None/empty, or if configs match
-                if not config_normalized or track_config_normalized == config_normalized:
+                print(f"[TRACK_SELECTOR] Found track: {track.name}, track.config='{track.config}' (normalized: '{track_config_normalized}')")
+                
+                # Match if both configs are empty/None, or if configs match exactly
+                if (not config_normalized and not track_config_normalized) or (track_config_normalized == config_normalized):
                     self.track_combo.setCurrentIndex(i)
                     # Force update internal state in case signal doesn't fire
                     self._selected_track = track
-                    print(f"[TRACK_SELECTOR] Selected track: {track.name} (config='{track.config}', index {i})")
+                    print(f"[TRACK_SELECTOR] ✅ Selected track: {track.name} (config='{track.config}', index {i})")
                     return True
                 else:
-                    print(f"[TRACK_SELECTOR] Track {track_id} found but config mismatch: '{track_config_normalized}' != '{config_normalized}'")
+                    print(f"[TRACK_SELECTOR] Config mismatch: '{track_config_normalized}' != '{config_normalized}'")
         
-        print(f"[TRACK_SELECTOR] Track not found: {track_id} (config={config})")
+        print(f"[TRACK_SELECTOR] ❌ Track not found: {track_id} (config={config})")
         return False
     
     def set_selected_track(self, track_id: str, config: str = None) -> bool:
