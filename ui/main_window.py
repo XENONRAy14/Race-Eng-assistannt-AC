@@ -30,12 +30,16 @@ from models.car import Car
 from models.track import Track
 
 from core.setup_engine import SetupEngine
+from core.setup_engine_v2 import SetupEngineV2, CATEGORY_TARGETS
+from core.physics_refiner import PhysicsRefiner
+from core.ac_monitor_v2 import ACMonitorV2
 from ai.decision_engine import DecisionEngine
 from ai.driving_analyzer import DrivingAnalyzer
 from assetto.ac_connector import ACConnector
 from assetto.ac_shared_memory import ACSharedMemory, ACStatus
 from data.setup_repository import SetupRepository
 from config.user_settings import get_user_settings
+import json
 
 
 class MainWindow(QMainWindow):
@@ -57,9 +61,18 @@ class MainWindow(QMainWindow):
         # Pass the pre-configured detector to ACConnector
         self.connector = ACConnector(detector=detector)
         self.setup_engine = SetupEngine()
+        self.setup_engine_v2 = SetupEngineV2()  # V2 engine
+        self.physics_refiner = PhysicsRefiner()  # V2.1 refiner
+        self.ac_monitor_v2 = ACMonitorV2()  # V2 thermal monitor
         self.decision_engine = DecisionEngine(self.setup_engine)
         self.shared_memory = ACSharedMemory()
         self.driving_analyzer = DrivingAnalyzer()
+        
+        # Try to connect AC Monitor V2
+        try:
+            self.ac_monitor_v2.connect()
+        except Exception as e:
+            print(f"[AC MONITOR V2] Could not connect: {e}")
         
         # Adaptive AI engine
         from ai.adaptive_setup_engine import AdaptiveSetupEngine, TrackConditions
@@ -1543,21 +1556,61 @@ class MainWindow(QMainWindow):
         except:
             pass
         
-        # Generate setup with all optimizations
+        # ═══════════════════════════════════════════════════════════
+        # V2.1 SETUP GENERATION PIPELINE
+        # ═══════════════════════════════════════════════════════════
+        
+        # Step 1: Get thermal data from AC Monitor V2
+        thermal_data = self.ac_monitor_v2.get_thermal_data()
+        ambient_temp = thermal_data.get("ambient_temp", 25.0)
+        road_temp = thermal_data.get("road_temp", 30.0)
+        
+        print(f"[V2.1] Thermal data: Ambient={ambient_temp:.1f}°C, Road={road_temp:.1f}°C")
+        
+        # Step 2: Load enriched car data
+        from utils.car_data_loader import load_car_data
+        car_data = load_car_data(car.car_id)
+        
+        # Step 3: Generate setup with V2 engine
         behavior_id = self.behavior_selector.get_selected_behavior()
-        base_setup, _ = self.setup_engine.generate_setup(
-            profile=self._current_profile,
-            behavior_id=behavior_id,
+        base_setup = self.setup_engine_v2.generate_setup(
             car=car,
-            track=track
+            track=track,
+            behavior_id=behavior_id,
+            profile=self._current_profile,
+            ambient_temp=ambient_temp,
+            road_temp=road_temp
         )
         
-        # Apply adaptive adjustments
+        # Step 4: Apply physics refinement (V2.1)
+        category = self.setup_engine_v2.classify_car(car)
+        targets = CATEGORY_TARGETS.get(category)
+        rake_angle = targets.rake_angle if targets else 0.0
+        
+        # Detect track type
+        track_type = "circuit"
+        track_name_lower = track.name.lower()
+        if "touge" in track_name_lower or "akina" in track_name_lower or "usui" in track_name_lower:
+            track_type = "touge"
+        elif "street" in track_name_lower or "highway" in track_name_lower:
+            track_type = "street"
+        
+        print(f"[V2.1] Refining: category={category}, rake={rake_angle:.1f}°, track_type={track_type}")
+        
+        refined_setup = self.physics_refiner.refine(
+            setup=base_setup,
+            category=category,
+            rake_angle=rake_angle,
+            track_type=track_type,
+            car_data=car_data
+        )
+        
+        # Step 5: Apply adaptive adjustments (optional)
         adapted_setup = self.adaptive_engine.adapt_setup_to_conditions(
-            base_setup, self.current_conditions, car, track
+            refined_setup, self.current_conditions, car, track
         )
         
-        # Apply learned optimizations
+        # Step 6: Apply learned optimizations
         optimized_setup = self.adaptive_engine.apply_learned_adjustments(adapted_setup)
         
         # Save and apply

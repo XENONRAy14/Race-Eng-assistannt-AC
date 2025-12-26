@@ -1,0 +1,185 @@
+{
+  "cars": [
+    {
+      "car_id": "ks_porsche_911_gt3_r_2016",
+      "name": "Porsche 911 GT3 R 2016",
+      "brand": "Porsche",
+      "car_class": "gt3",
+      "drivetrain": "RWD",
+      "power_hp": 550,
+      "weight_kg": 1200,
+      "wheelbase_mm": 2450,
+      "max_torque_nm": 650,
+      "motion_ratio_front": 0.9,
+      "motion_ratio_rear": 0.8,
+      "corner_weights_kg": {
+        "lf": 300,
+        "rf": 300,
+        "lr": 300,
+        "rr": 300
+      },
+      "notes": "GT3 spec with multi-link rear suspension"
+    },
+    {
+      "car_id": "rss_formula_hybrid_2017",
+      "name": "Ferrari SF70H",
+      "brand": "Ferrari",
+      "car_class": "formula",
+      "drivetrain": "RWD",
+      "power_hp": 950,
+      "weight_kg": 728,
+      "wheelbase_mm": 3600,
+      "max_torque_nm": 800,
+      "motion_ratio_front": 1.0,
+      "motion_ratio_rear": 1.0,
+      "corner_weights_kg": {
+        "lf": 182,
+        "rf": 182,
+        "lr": 182,
+        "rr": 182
+      },
+      "notes": "F1 push-rod suspension, direct 1:1 motion ratio"
+    },
+    {
+      "car_id": "nissan_skyline_r34",
+      "name": "Nissan Skyline GT-R R34",
+      "brand": "Nissan",
+      "car_class": "street",
+      "drivetrain": "AWD",
+      "power_hp": 280,
+      "weight_kg": 1560,
+      "wheelbase_mm": 2665,
+      "max_torque_nm": 392,
+      "motion_ratio_front": 0.8,
+      "motion_ratio_rear": 0.7,
+      "corner_weights_kg": {
+        "lf": 390,
+        "rf": 390,
+        "lr": 390,
+        "rr": 390
+      },
+      "notes": "Multi-link rear, MacPherson front"
+    },
+    {
+      "car_id": "bmw_m3_e30_drift",
+      "name": "BMW M3 E30 Drift",
+      "brand": "BMW",
+      "car_class": "drift",
+      "drivetrain": "RWD",
+      "power_hp": 320,
+      "weight_kg": 1200,
+      "wheelbase_mm": 2570,
+      "max_torque_nm": 380,
+      "motion_ratio_front": 0.85,
+      "motion_ratio_rear": 0.7,
+      "corner_weights_kg": {
+        "lf": 300,
+        "rf": 300,
+        "lr": 300,
+        "rr": 300
+      },
+      "notes": "Drift spec with modified suspension geometry"
+    },
+    {
+      "car_id": "ks_porsche_911_carrera_s",
+      "name": "Porsche 911 Carrera S",
+      "brand": "Porsche",
+      "car_class": "street_sport",
+      "drivetrain": "RWD",
+      "power_hp": 420,
+      "weight_kg": 1415,
+      "wheelbase_mm": 2450,
+      "max_torque_nm": 500,
+      "motion_ratio_front": 0.85,
+      "motion_ratio_rear": 0.75,
+      "corner_weights_kg": {
+        "lf": 354,
+        "rf": 354,
+        "lr": 354,
+        "rr": 354
+      },
+      "notes": "Street sport with MacPherson strut front, multi-link rear"
+    },
+    {
+      "car_id": "ks_audi_r18_etron_quattro",
+      "name": "Audi R18 e-tron quattro",
+      "brand": "Audi",
+      "car_class": "prototype",
+      "drivetrain": "AWD",
+      "power_hp": 550,
+      "weight_kg": 870,
+      "wheelbase_mm": 3130,
+      "max_torque_nm": 850,
+      "motion_ratio_front": 0.95,
+      "motion_ratio_rear": 0.95,
+      "corner_weights_kg": {
+        "lf": 218,
+        "rf": 218,
+        "lr": 218,
+        "rr": 218
+      },
+      "notes": "LMP1 with push-rod suspension, hybrid system"
+    },
+    {
+      "car_id": "lotus_49",
+      "name": "Lotus 49",
+      "brand": "Lotus",
+      "car_class": "vintage",
+      "drivetrain": "RWD",
+      "power_hp": 415,
+      "weight_kg": 520,
+      "wheelbase_mm": 2438,
+      "max_torque_nm": 400,
+      "motion_ratio_front": 0.75,
+      "motion_ratio_rear": 0.65,
+      "corner_weights_kg": {
+        "lf": 130,
+        "rf": 130,
+        "lr": 130,
+        "rr": 130
+      },
+      "notes": "1960s F1, soft long-travel suspension"
+    },
+    {
+      "car_id": "ks_toyota_ae86",
+      "name": "Toyota AE86 Trueno",
+      "brand": "Toyota",
+      "car_class": "street",
+      "drivetrain": "RWD",
+      "power_hp": 130,
+      "weight_kg": 925,
+      "wheelbase_mm": 2400,
+      "max_torque_nm": 149,
+      "motion_ratio_front": 0.8,
+      "motion_ratio_rear": 0.7,
+      "corner_weights_kg": {
+        "lf": 231,
+        "rf": 231,
+        "lr": 231,
+        "rr": 231
+      },
+      "notes": "Touge legend with MacPherson strut front, live axle rear"
+    }
+  ],
+  "metadata": {
+    "version": "2.1",
+    "last_updated": "2025-12-27",
+    "description": "Enriched car database with physical parameters for V2.1 setup generation",
+    "required_fields": [
+      "car_id",
+      "name",
+      "car_class",
+      "drivetrain",
+      "power_hp",
+      "weight_kg",
+      "wheelbase_mm",
+      "max_torque_nm",
+      "motion_ratio_front",
+      "motion_ratio_rear"
+    ],
+    "optional_fields": [
+      "corner_weights_kg",
+      "notes"
+    ]
+  }
+}
