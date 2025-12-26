@@ -21,7 +21,272 @@ class SetupEngine:
     Orchestrates behavior, rules, and scoring engines.
     """
     
-    # Base setup values (neutral starting point)
+    # Race car classes that should use GT3/Race base values
+    RACE_CAR_CLASSES = ["gt3", "gt2", "gt4", "gte", "lmp", "lmp1", "lmp2", "lmp3", 
+                        "dtm", "gtc", "gt1", "prototype", "formula", "f1", "f2", "f3"]
+    
+    # GT3/Race Cars - Click-based values, aggressive setup
+    GT3_BASE_VALUES = {
+        "TYRES": {
+            "PRESSURE_LF": 27.5,
+            "PRESSURE_RF": 27.5,
+            "PRESSURE_LR": 27.0,
+            "PRESSURE_RR": 27.0,
+            "COMPOUND": 2
+        },
+        "BRAKES": {
+            "BIAS": 62.0,
+            "FRONT_BIAS": 62.0,
+            "BRAKE_POWER_MULT": 1.0
+        },
+        "SUSPENSION": {
+            "SPRING_RATE_LF": 10,  # Click-based
+            "SPRING_RATE_RF": 10,
+            "SPRING_RATE_LR": 9,
+            "SPRING_RATE_RR": 9,
+            "DAMP_BUMP_LF": 6,
+            "DAMP_BUMP_RF": 6,
+            "DAMP_BUMP_LR": 5,
+            "DAMP_BUMP_RR": 5,
+            "DAMP_REBOUND_LF": 8,
+            "DAMP_REBOUND_RF": 8,
+            "DAMP_REBOUND_LR": 7,
+            "DAMP_REBOUND_RR": 7,
+            "DAMP_FAST_BUMP_LF": 4,
+            "DAMP_FAST_BUMP_RF": 4,
+            "DAMP_FAST_BUMP_LR": 3,
+            "DAMP_FAST_BUMP_RR": 3,
+            "DAMP_FAST_REBOUND_LF": 6,
+            "DAMP_FAST_REBOUND_RF": 6,
+            "DAMP_FAST_REBOUND_LR": 5,
+            "DAMP_FAST_REBOUND_RR": 5,
+            "RIDE_HEIGHT_LF": 50,
+            "RIDE_HEIGHT_RF": 50,
+            "RIDE_HEIGHT_LR": 55,
+            "RIDE_HEIGHT_RR": 55,
+            "PACKER_LF": 0,
+            "PACKER_RF": 0,
+            "PACKER_LR": 0,
+            "PACKER_RR": 0
+        },
+        "DIFFERENTIAL": {
+            "POWER": 65.0,
+            "COAST": 50.0,
+            "PRELOAD": 30.0
+        },
+        "ALIGNMENT": {
+            "CAMBER_LF": -4.0,
+            "CAMBER_RF": -4.0,
+            "CAMBER_LR": -3.0,
+            "CAMBER_RR": -3.0,
+            "TOE_LF": -0.05,
+            "TOE_RF": -0.05,
+            "TOE_LR": 0.15,
+            "TOE_RR": 0.15,
+            "CASTER_LF": 0.0,
+            "CASTER_RF": 0.0
+        },
+        "AERO": {
+            "WING_FRONT": 2,
+            "WING_REAR": 3,
+            "SPLITTER": 1,
+            "REAR_WING": 3
+        },
+        "FUEL": {
+            "FUEL": 30
+        },
+        "ARB": {
+            "FRONT": 6,
+            "REAR": 5
+        },
+        "ELECTRONICS": {
+            "TC": 4,
+            "ABS": 2,
+            "ENGINE_MAP": 1,
+            "MGU_K_DELIVERY": 0,
+            "MGU_K_RECOVERY": 0
+        },
+        "ENGINE": {
+            "ENGINE_LIMITER": 0,
+            "TURBO_BOOST": 0
+        }
+    }
+    
+    # Street/Touge Cars - Absolute values, balanced setup
+    STREET_BASE_VALUES = {
+        "TYRES": {
+            "PRESSURE_LF": 32.0,
+            "PRESSURE_RF": 32.0,
+            "PRESSURE_LR": 30.0,
+            "PRESSURE_RR": 30.0,
+            "COMPOUND": 2
+        },
+        "BRAKES": {
+            "BIAS": 58.0,
+            "FRONT_BIAS": 58.0,
+            "BRAKE_POWER_MULT": 1.0
+        },
+        "SUSPENSION": {
+            "SPRING_RATE_LF": 75000,
+            "SPRING_RATE_RF": 75000,
+            "SPRING_RATE_LR": 65000,
+            "SPRING_RATE_RR": 65000,
+            "DAMP_BUMP_LF": 2800,
+            "DAMP_BUMP_RF": 2800,
+            "DAMP_BUMP_LR": 2500,
+            "DAMP_BUMP_RR": 2500,
+            "DAMP_REBOUND_LF": 4500,
+            "DAMP_REBOUND_RF": 4500,
+            "DAMP_REBOUND_LR": 4000,
+            "DAMP_REBOUND_RR": 4000,
+            "DAMP_FAST_BUMP_LF": 1800,
+            "DAMP_FAST_BUMP_RF": 1800,
+            "DAMP_FAST_BUMP_LR": 1600,
+            "DAMP_FAST_BUMP_RR": 1600,
+            "DAMP_FAST_REBOUND_LF": 3200,
+            "DAMP_FAST_REBOUND_RF": 3200,
+            "DAMP_FAST_REBOUND_LR": 2800,
+            "DAMP_FAST_REBOUND_RR": 2800,
+            "RIDE_HEIGHT_LF": 100,
+            "RIDE_HEIGHT_RF": 100,
+            "RIDE_HEIGHT_LR": 105,
+            "RIDE_HEIGHT_RR": 105,
+            "PACKER_LF": 0,
+            "PACKER_RF": 0,
+            "PACKER_LR": 0,
+            "PACKER_RR": 0
+        },
+        "DIFFERENTIAL": {
+            "POWER": 40.0,
+            "COAST": 30.0,
+            "PRELOAD": 20.0
+        },
+        "ALIGNMENT": {
+            "CAMBER_LF": -2.5,
+            "CAMBER_RF": -2.5,
+            "CAMBER_LR": -2.0,
+            "CAMBER_RR": -2.0,
+            "TOE_LF": 0.05,
+            "TOE_RF": 0.05,
+            "TOE_LR": 0.15,
+            "TOE_RR": 0.15,
+            "CASTER_LF": 0.0,
+            "CASTER_RF": 0.0
+        },
+        "AERO": {
+            "WING_FRONT": 0,
+            "WING_REAR": 0,
+            "SPLITTER": 0,
+            "REAR_WING": 0
+        },
+        "FUEL": {
+            "FUEL": 30
+        },
+        "ARB": {
+            "FRONT": 5,
+            "REAR": 4
+        },
+        "ELECTRONICS": {
+            "TC": 5,
+            "ABS": 3,
+            "ENGINE_MAP": 1,
+            "MGU_K_DELIVERY": 0,
+            "MGU_K_RECOVERY": 0
+        },
+        "ENGINE": {
+            "ENGINE_LIMITER": 0,
+            "TURBO_BOOST": 0
+        }
+    }
+    
+    # Drift Cars - High locking diff, toe-out rear, less rear camber
+    DRIFT_BASE_VALUES = {
+        "TYRES": {
+            "PRESSURE_LF": 32.0,
+            "PRESSURE_RF": 32.0,
+            "PRESSURE_LR": 35.0,  # Higher rear pressure
+            "PRESSURE_RR": 35.0,
+            "COMPOUND": 2
+        },
+        "BRAKES": {
+            "BIAS": 54.0,  # More rear bias
+            "FRONT_BIAS": 54.0,
+            "BRAKE_POWER_MULT": 1.0
+        },
+        "SUSPENSION": {
+            "SPRING_RATE_LF": 85000,
+            "SPRING_RATE_RF": 85000,
+            "SPRING_RATE_LR": 70000,  # Softer rear
+            "SPRING_RATE_RR": 70000,
+            "DAMP_BUMP_LF": 3200,
+            "DAMP_BUMP_RF": 3200,
+            "DAMP_BUMP_LR": 2400,
+            "DAMP_BUMP_RR": 2400,
+            "DAMP_REBOUND_LF": 5000,
+            "DAMP_REBOUND_RF": 5000,
+            "DAMP_REBOUND_LR": 3800,
+            "DAMP_REBOUND_RR": 3800,
+            "DAMP_FAST_BUMP_LF": 2200,
+            "DAMP_FAST_BUMP_RF": 2200,
+            "DAMP_FAST_BUMP_LR": 1600,
+            "DAMP_FAST_BUMP_RR": 1600,
+            "DAMP_FAST_REBOUND_LF": 3800,
+            "DAMP_FAST_REBOUND_RF": 3800,
+            "DAMP_FAST_REBOUND_LR": 2600,
+            "DAMP_FAST_REBOUND_RR": 2600,
+            "RIDE_HEIGHT_LF": 110,
+            "RIDE_HEIGHT_RF": 110,
+            "RIDE_HEIGHT_LR": 120,
+            "RIDE_HEIGHT_RR": 120,
+            "PACKER_LF": 0,
+            "PACKER_RF": 0,
+            "PACKER_LR": 0,
+            "PACKER_RR": 0
+        },
+        "DIFFERENTIAL": {
+            "POWER": 85.0,  # Very locked
+            "COAST": 65.0,
+            "PRELOAD": 50.0
+        },
+        "ALIGNMENT": {
+            "CAMBER_LF": -3.5,
+            "CAMBER_RF": -3.5,
+            "CAMBER_LR": -1.0,  # Much less rear camber
+            "CAMBER_RR": -1.0,
+            "TOE_LF": -0.05,
+            "TOE_RF": -0.05,
+            "TOE_LR": -0.15,  # Toe-out rear
+            "TOE_RR": -0.15,
+            "CASTER_LF": 0.0,
+            "CASTER_RF": 0.0
+        },
+        "AERO": {
+            "WING_FRONT": 0,
+            "WING_REAR": 0,
+            "SPLITTER": 0,
+            "REAR_WING": 0
+        },
+        "FUEL": {
+            "FUEL": 30
+        },
+        "ARB": {
+            "FRONT": 7,  # Stiffer front
+            "REAR": 3   # Softer rear
+        },
+        "ELECTRONICS": {
+            "TC": 0,  # No TC for drift
+            "ABS": 0,  # No ABS for drift
+            "ENGINE_MAP": 1,
+            "MGU_K_DELIVERY": 0,
+            "MGU_K_RECOVERY": 0
+        },
+        "ENGINE": {
+            "ENGINE_LIMITER": 0,
+            "TURBO_BOOST": 0
+        }
+    }
+    
+    # Legacy BASE_VALUES for backward compatibility (uses STREET_BASE_VALUES)
     BASE_VALUES = {
         "TYRES": {
             "PRESSURE_LF": 26.0,
@@ -256,7 +521,7 @@ class SetupEngine:
         name: str,
         behavior_id: str
     ) -> Setup:
-        """Create a setup with base values."""
+        """Create a setup with base values appropriate for the car type."""
         setup = Setup(
             name=name,
             car_id=car.car_id if car else "",
@@ -264,8 +529,12 @@ class SetupEngine:
             behavior=behavior_id
         )
         
+        # Detect car type and select appropriate base values
+        car_type = self._detect_car_type(car) if car else "street"
+        print(f"[SETUP] Detected car type: {car_type} for {car.name if car else 'unknown'}")
+        
         # For race cars, try to load AC's default setup first
-        if car and self._is_race_car(car):
+        if car_type == "race":
             ac_setup = self._load_ac_default_setup(car)
             if ac_setup:
                 # Use AC default setup as base
@@ -277,38 +546,67 @@ class SetupEngine:
                 print(f"[SETUP] Using AC default setup for {car.name}")
                 return setup
             else:
-                print(f"[SETUP] No AC default found for {car.name}, using generic values")
+                print(f"[SETUP] No AC default found, using GT3_BASE_VALUES")
+                base_values = self.GT3_BASE_VALUES
+        elif car_type == "drift":
+            print(f"[SETUP] Using DRIFT_BASE_VALUES for {car.name}")
+            base_values = self.DRIFT_BASE_VALUES
+        else:  # street
+            print(f"[SETUP] Using STREET_BASE_VALUES for {car.name}")
+            base_values = self.STREET_BASE_VALUES
         
-        # Fallback: Initialize with generic base values (good for Touge/street cars)
-        for section_name, values in self.BASE_VALUES.items():
+        # Initialize with appropriate base values
+        for section_name, values in base_values.items():
             setup.sections[section_name] = SetupSection(section_name, values.copy())
         
         return setup
     
-    def _is_race_car(self, car: Car) -> bool:
-        """Check if car is a race car that needs AC default setup."""
+    def _detect_car_type(self, car: Car) -> str:
+        """
+        Detect car type for appropriate setup base.
+        Returns: "race", "drift", or "street"
+        """
         if not car:
-            return False
+            return "street"
         
-        # Check car_class
+        # 1. Check if drift car
+        if car.is_drift_car():
+            return "drift"
+        
+        car_id_lower = car.car_id.lower()
+        car_name_lower = car.name.lower() if car.name else ""
+        
+        if "drift" in car_id_lower or "drift" in car_name_lower:
+            return "drift"
+        
+        # 2. Check car_class for race cars
         car_class_lower = car.car_class.lower() if car.car_class else ""
         for race_class in self.RACE_CAR_CLASSES:
             if race_class in car_class_lower:
-                return True
+                return "race"
         
-        # Check car_id for common race car patterns
-        car_id_lower = car.car_id.lower()
+        # 3. Check car_id for race car patterns
         race_patterns = ["_gt3", "_gt2", "_gt4", "_gte", "_lmp", "_dtm", "_tcr", "_f1", "_f2", "_f3"]
         for pattern in race_patterns:
             if pattern in car_id_lower:
-                return True
+                return "race"
         
-        # Check car name
-        name_lower = car.name.lower() if car.name else ""
-        if any(x in name_lower for x in ["gt3", "gt2", "gt4", "gte", "lmp", "dtm", "formula"]):
-            return True
+        # 4. Check car name
+        if any(x in car_name_lower for x in ["gt3", "gt2", "gt4", "gte", "lmp", "dtm", "formula"]):
+            return "race"
         
-        return False
+        # 5. Check power/weight ratio
+        if car.power_hp and car.weight_kg and car.weight_kg > 0:
+            power_to_weight = car.power_hp / car.weight_kg
+            if power_to_weight > 0.4:  # >400hp/ton = race car
+                return "race"
+        
+        # 6. Default to street
+        return "street"
+    
+    def _is_race_car(self, car: Car) -> bool:
+        """Check if car is a race car (for backward compatibility)."""
+        return self._detect_car_type(car) == "race"
     
     def _load_ac_default_setup(self, car: Car) -> Optional[Setup]:
         """
@@ -633,19 +931,19 @@ class SetupEngine:
         # More rotation = looser rear, tighter front
         if rotation > 0.5:
             # Increase rear toe-out for rotation
-            rear_toe_adj = (rotation - 0.5) * 0.3  # Up to +0.15 degrees
+            rear_toe_adj = (rotation - 0.5) * 0.8  # Up to +0.4 degrees (2.67x)
             for key in ["TOE_LR", "TOE_RR"]:
                 current = setup.get_value("ALIGNMENT", key, 0.1)
                 setup.set_value("ALIGNMENT", key, current + rear_toe_adj)
             
             # Softer rear ARB for rotation
             rear_arb = setup.get_value("ARB", "REAR", 4)
-            setup.set_value("ARB", "REAR", rear_arb * (1.0 - (rotation - 0.5) * 0.3))
+            setup.set_value("ARB", "REAR", rear_arb * (1.0 - (rotation - 0.5) * 0.6))  # 2x
         else:
             # More stability = stiffer rear
             stability = factors["stability"]
             rear_arb = setup.get_value("ARB", "REAR", 4)
-            setup.set_value("ARB", "REAR", rear_arb * (1.0 + stability * 0.2))
+            setup.set_value("ARB", "REAR", rear_arb * (1.0 + stability * 0.4))  # 2x
         
         # ═══════════════════════════════════════════════════════════════
         # GRIP vs SLIDE preference
@@ -654,20 +952,20 @@ class SetupEngine:
         
         if slide > 0.5:
             # More slide = lower tire pressures, less camber
-            pressure_adj = (slide - 0.5) * 2  # Up to -1 psi
+            pressure_adj = (slide - 0.5) * 4  # Up to -2 psi (2x)
             for key in ["PRESSURE_LF", "PRESSURE_RF", "PRESSURE_LR", "PRESSURE_RR"]:
                 current = setup.get_value("TYRES", key, 26.0)
                 setup.set_value("TYRES", key, current - pressure_adj)
             
             # Less aggressive camber for sliding
-            camber_mult = 1.0 - (slide - 0.5) * 0.3
+            camber_mult = 1.0 - (slide - 0.5) * 0.6  # 2x
             for key in ["CAMBER_LF", "CAMBER_RF", "CAMBER_LR", "CAMBER_RR"]:
                 current = setup.get_value("ALIGNMENT", key, -3.0)
                 setup.set_value("ALIGNMENT", key, current * camber_mult)
         else:
             # More grip = optimal pressures, more camber
             grip = factors["grip"]
-            camber_mult = 1.0 + grip * 0.15
+            camber_mult = 1.0 + grip * 0.3  # 2x
             for key in ["CAMBER_LF", "CAMBER_RF"]:
                 current = setup.get_value("ALIGNMENT", key, -3.0)
                 setup.set_value("ALIGNMENT", key, current * camber_mult)
@@ -679,19 +977,19 @@ class SetupEngine:
         
         # Aggressive = stiffer suspension, more responsive
         if aggression > 0.5:
-            stiffness_mult = 1.0 + (aggression - 0.5) * 0.3
+            stiffness_mult = 1.0 + (aggression - 0.5) * 0.6  # Up to +30% (2x)
             for key in ["SPRING_RATE_LF", "SPRING_RATE_RF", "SPRING_RATE_LR", "SPRING_RATE_RR"]:
                 current = setup.get_value("SUSPENSION", key, 70000)
                 setup.set_value("SUSPENSION", key, int(current * stiffness_mult))
             
             # More aggressive diff
             diff_power = setup.get_value("DIFFERENTIAL", "POWER", 45)
-            setup.set_value("DIFFERENTIAL", "POWER", diff_power * (1.0 + (aggression - 0.5) * 0.4))
+            setup.set_value("DIFFERENTIAL", "POWER", diff_power * (1.0 + (aggression - 0.5) * 0.8))  # 2x
         else:
             # Safe = softer, more forgiving
             safety = factors["safety"]
             diff_power = setup.get_value("DIFFERENTIAL", "POWER", 45)
-            setup.set_value("DIFFERENTIAL", "POWER", diff_power * (1.0 - safety * 0.2))
+            setup.set_value("DIFFERENTIAL", "POWER", diff_power * (1.0 - safety * 0.4))  # 2x
         
         # ═══════════════════════════════════════════════════════════════
         # DRIFT preference
@@ -701,14 +999,14 @@ class SetupEngine:
         if drift > 0.3:
             # Drift setup: locked diff, rear bias, softer rear
             diff_power = setup.get_value("DIFFERENTIAL", "POWER", 45)
-            setup.set_value("DIFFERENTIAL", "POWER", min(100, diff_power + drift * 40))
+            setup.set_value("DIFFERENTIAL", "POWER", min(100, diff_power + drift * 60))  # 1.5x
             
             diff_coast = setup.get_value("DIFFERENTIAL", "COAST", 30)
-            setup.set_value("DIFFERENTIAL", "COAST", min(100, diff_coast + drift * 30))
+            setup.set_value("DIFFERENTIAL", "COAST", min(100, diff_coast + drift * 50))  # 1.67x
             
             # More rear brake bias for drift initiation
             brake_bias = setup.get_value("BRAKES", "FRONT_BIAS", 60)
-            setup.set_value("BRAKES", "FRONT_BIAS", brake_bias - drift * 10)
+            setup.set_value("BRAKES", "FRONT_BIAS", brake_bias - drift * 15)  # 1.5x
         
         # ═══════════════════════════════════════════════════════════════
         # COMFORT vs PERFORMANCE preference
@@ -717,14 +1015,14 @@ class SetupEngine:
         
         if performance > 0.5:
             # Performance = stiffer damping, lower ride height
-            damp_mult = 1.0 + (performance - 0.5) * 0.4
+            damp_mult = 1.0 + (performance - 0.5) * 0.8  # Up to +40% (2x)
             for key in ["DAMP_BUMP_LF", "DAMP_BUMP_RF", "DAMP_BUMP_LR", "DAMP_BUMP_RR",
                        "DAMP_REBOUND_LF", "DAMP_REBOUND_RF", "DAMP_REBOUND_LR", "DAMP_REBOUND_RR"]:
                 current = setup.get_value("SUSPENSION", key, 3000)
                 setup.set_value("SUSPENSION", key, int(current * damp_mult))
             
             # Lower ride height for performance
-            height_adj = (performance - 0.5) * 10  # Up to -5mm
+            height_adj = (performance - 0.5) * 20  # Up to -10mm (2x)
             for key in ["RIDE_HEIGHT_LF", "RIDE_HEIGHT_RF", "RIDE_HEIGHT_LR", "RIDE_HEIGHT_RR"]:
                 current = setup.get_value("SUSPENSION", key, 50)
                 setup.set_value("SUSPENSION", key, max(30, current - height_adj))
