@@ -269,15 +269,26 @@ class CarTrackSelector(QWidget):
     
     def select_car_by_id(self, car_id: str) -> bool:
         """Select car by ID."""
+        print(f"[CAR_SELECTOR] Searching for car_id='{car_id}'")
+        print(f"[CAR_SELECTOR] Total cars in combo: {self.car_combo.count()}")
+        
         for i in range(self.car_combo.count()):
             car = self.car_combo.itemData(i)
             if car and car.car_id == car_id:
+                print(f"[CAR_SELECTOR] Found car: {car.name}")
+                print(f"[CAR_SELECTOR] Setting combo index to {i}")
                 self.car_combo.setCurrentIndex(i)
                 # Force update internal state in case signal doesn't fire
                 self._selected_car = car
-                print(f"[CAR_SELECTOR] Selected car: {car.name} (index {i})")
+                print(f"[CAR_SELECTOR] After setCurrentIndex: combo index={self.car_combo.currentIndex()}")
+                print(f"[CAR_SELECTOR] _selected_car={self._selected_car.name if self._selected_car else None}")
+                print(f"[CAR_SELECTOR] ✅ Selected car: {car.name} (index {i})")
+                
+                # Manually trigger the signal to ensure UI updates
+                self._on_car_changed(i)
+                
                 return True
-        print(f"[CAR_SELECTOR] Car not found: {car_id}")
+        print(f"[CAR_SELECTOR] ❌ Car not found: {car_id}")
         return False
     
     def set_selected_car(self, car_id: str) -> bool:
@@ -290,6 +301,7 @@ class CarTrackSelector(QWidget):
         config_normalized = config if config else ""
         
         print(f"[TRACK_SELECTOR] Searching for track_id='{track_id}', config='{config_normalized}'")
+        print(f"[TRACK_SELECTOR] Total tracks in combo: {self.track_combo.count()}")
         
         for i in range(self.track_combo.count()):
             track = self.track_combo.itemData(i)
@@ -300,10 +312,17 @@ class CarTrackSelector(QWidget):
                 
                 # Match if both configs are empty/None, or if configs match exactly
                 if (not config_normalized and not track_config_normalized) or (track_config_normalized == config_normalized):
+                    print(f"[TRACK_SELECTOR] Setting combo index to {i}")
                     self.track_combo.setCurrentIndex(i)
                     # Force update internal state in case signal doesn't fire
                     self._selected_track = track
+                    print(f"[TRACK_SELECTOR] After setCurrentIndex: combo index={self.track_combo.currentIndex()}")
+                    print(f"[TRACK_SELECTOR] _selected_track={self._selected_track.name if self._selected_track else None}")
                     print(f"[TRACK_SELECTOR] ✅ Selected track: {track.name} (config='{track.config}', index {i})")
+                    
+                    # Manually trigger the signal to ensure UI updates
+                    self._on_track_changed(i)
+                    
                     return True
                 else:
                     print(f"[TRACK_SELECTOR] Config mismatch: '{track_config_normalized}' != '{config_normalized}'")
