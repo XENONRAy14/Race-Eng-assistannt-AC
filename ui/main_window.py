@@ -1329,17 +1329,8 @@ class MainWindow(QMainWindow):
             
             print(f"[DEBUG] is_in_session: {is_in_session}")
             
-            if is_in_session:
-                # Game is running (live, paused, or replay)
-                self._update_game_status(live_data)
-                
-                # Update track map widget
-                self._update_track_map(live_data)
-                
-                # Record lap data for AI learning
-                self._record_lap_data(live_data)
-                
-                # Check for car/track change
+            # Check for car/track change FIRST (works in menu or in session)
+            if live_data.is_connected and live_data.car_model and live_data.track:
                 print(f"[DEBUG] Checking car/track change:")
                 print(f"[DEBUG]   Current: car='{live_data.car_model}', track='{live_data.track}'")
                 print(f"[DEBUG]   Last: car='{self._last_detected_car}', track='{self._last_detected_track}'")
@@ -1364,6 +1355,16 @@ class MainWindow(QMainWindow):
                     )
                 else:
                     print(f"[DEBUG] No change detected, skipping auto-select")
+            
+            if is_in_session:
+                # Game is running (live, paused, or replay)
+                self._update_game_status(live_data)
+                
+                # Update track map widget
+                self._update_track_map(live_data)
+                
+                # Record lap data for AI learning
+                self._record_lap_data(live_data)
             elif live_data.is_connected and live_data.car_model and live_data.track:
                 # Connected, car/track loaded but not in session (menu/loading)
                 self.game_status_label.setText(f"🎮 AC: {live_data.car_model[:20]} @ {live_data.track[:20]}")
