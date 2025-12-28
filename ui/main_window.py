@@ -31,6 +31,7 @@ from models.track import Track
 
 from core.setup_engine import SetupEngine
 from core.setup_engine_v2 import SetupEngineV2, CATEGORY_TARGETS
+from core.setup_engine_v22 import SetupEngineV22, create_v22_engine, CATEGORY_TARGETS_V22
 from core.physics_refiner import PhysicsRefiner
 from core.ac_monitor_v2 import ACMonitorV2
 from ai.decision_engine import DecisionEngine
@@ -64,6 +65,10 @@ class MainWindow(QMainWindow):
         self.setup_engine_v2 = SetupEngineV2()  # V2 engine
         self.physics_refiner = PhysicsRefiner()  # V2.1 refiner
         self.ac_monitor_v2 = ACMonitorV2()  # V2 thermal monitor
+        
+        # V2.2 Engine - Complete system with dynamic mapping + smart conversion
+        self.setup_engine_v22 = create_v22_engine()
+        
         self.decision_engine = DecisionEngine(self.setup_engine)
         self.shared_memory = ACSharedMemory()
         self.driving_analyzer = DrivingAnalyzer()
@@ -1558,7 +1563,8 @@ class MainWindow(QMainWindow):
             pass
         
         # ═══════════════════════════════════════════════════════════
-        # V2.1 SETUP GENERATION PIPELINE
+        # V2.2 SETUP GENERATION PIPELINE
+        # Complete system with dynamic mapping + smart conversion
         # ═══════════════════════════════════════════════════════════
         
         # Step 1: Get thermal data from AC Monitor V2
@@ -1566,15 +1572,14 @@ class MainWindow(QMainWindow):
         ambient_temp = thermal_data.get("ambient_temp", 25.0)
         road_temp = thermal_data.get("road_temp", 30.0)
         
-        print(f"[V2.1] Thermal data: Ambient={ambient_temp:.1f}°C, Road={road_temp:.1f}°C")
+        print(f"[V2.2] Thermal data: Ambient={ambient_temp:.1f}°C, Road={road_temp:.1f}°C")
         
-        # Step 2: Load enriched car data
-        from utils.car_data_loader import load_car_data
-        car_data = load_car_data(car.car_id)
-        
-        # Step 3: Generate setup with V2 engine
+        # Step 2: Get behavior
         behavior_id = self.behavior_selector.get_selected_behavior()
-        base_setup = self.setup_engine_v2.generate_setup(
+        
+        # Step 3: Generate setup with V2.2 engine (includes all features)
+        print(f"[V2.2] Generating setup with V2.2 engine...")
+        base_setup, metadata = self.setup_engine_v22.generate_setup(
             car=car,
             track=track,
             behavior_id=behavior_id,
@@ -1583,48 +1588,41 @@ class MainWindow(QMainWindow):
             road_temp=road_temp
         )
         
-        # Step 4: Apply physics refinement (V2.1)
-        category = self.setup_engine_v2.classify_car(car)
-        targets = CATEGORY_TARGETS.get(category)
-        rake_angle = targets.rake_angle if targets else 0.0
+        category = metadata.get("category", "street")
+        print(f"[V2.2] Category: {category}, Track type: {metadata.get('track_type', 'circuit')}")
         
-        # Detect track type
-        track_type = "circuit"
-        track_name_lower = track.name.lower()
-        if "touge" in track_name_lower or "akina" in track_name_lower or "usui" in track_name_lower:
-            track_type = "touge"
-        elif "street" in track_name_lower or "highway" in track_name_lower:
-            track_type = "street"
+        # Log slider changes
+        changes = metadata.get("changes", [])
+        if changes:
+            print(f"[V2.2] Applied {len(changes)} slider interdependency changes")
+            for change in changes[:5]:
+                print(f"  {change}")
         
-        print(f"[V2.1] Refining: category={category}, rake={rake_angle:.1f}°, track_type={track_type}")
-        
-        refined_setup = self.physics_refiner.refine(
-            setup=base_setup,
-            category=category,
-            rake_angle=rake_angle,
-            track_type=track_type,
-            car_data=car_data
-        )
-        
-        # Step 5: Apply adaptive adjustments (optional)
+        # Step 4: Apply adaptive adjustments (optional)
         adapted_setup = self.adaptive_engine.adapt_setup_to_conditions(
-            refined_setup, self.current_conditions, car, track
+            base_setup, self.current_conditions, car, track
         )
         
-        # Step 6: Apply learned optimizations
+        # Step 5: Apply learned optimizations
         optimized_setup = self.adaptive_engine.apply_learned_adjustments(adapted_setup)
         
-        # Save and apply
+        # Save to repository
         self._current_setup = optimized_setup
         self.repository.save_setup(optimized_setup)
         
-        # Write to AC using connector (correct method with all required args)
-        success, message, file_path = self.connector.save_setup(
+        # Step 6: Write to AC using V2.2 writer (with dynamic mapping + smart conversion)
+        print(f"[V2.2] Exporting setup with dynamic mapping...")
+        success, message, file_path = self.setup_engine_v22.writer.write_setup(
             setup=optimized_setup,
             car_id=car.car_id,
             track_id=track.full_id,
+            category=category,
             overwrite=True
         )
+        
+        # Log mapping summary
+        mapping_summary = self.setup_engine_v22.get_car_mapping(car.car_id)
+        print(f"[V2.2] Detected {len(mapping_summary)} parameters for {car.car_id}")
         
         if success:
             self.quick_start_widget.set_status("done")
