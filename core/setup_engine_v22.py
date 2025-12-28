@@ -12,7 +12,7 @@ from models.car import Car
 from models.track import Track
 from models.driver_profile import DriverProfile
 
-from core.setup_engine_v2 import SetupEngineV2, CATEGORY_TARGETS, CategoryTargets
+from core.setup_engine_v2 import SetupEngineV2, CATEGORY_TARGETS
 from core.physics_refiner import PhysicsRefiner
 from core.dynamic_mapper import DynamicMapper, ValueTypeDetector
 from core.clicks_converter import SmartConverter, ClicksConverter
@@ -22,8 +22,29 @@ from core.setup_writer_v2 import SetupWriterV2
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-# V2.2 CATEGORY TARGETS (Updated based on engineer feedback)
+# V2.2 CATEGORY TARGETS (Simplified dataclass for V2.2)
 # ═══════════════════════════════════════════════════════════════════════════
+
+@dataclass
+class CategoryTargets:
+    """Simplified targets for V2.2 categories."""
+    frequency_front: float
+    frequency_rear: float
+    damping_ratio: float
+    hot_pressure_front: float
+    hot_pressure_rear: float
+    camber_front: float
+    camber_rear: float
+    toe_front: float
+    toe_rear: float
+    caster: float
+    rake_angle: float
+    diff_power: float
+    diff_coast: float
+    diff_preload: float
+    brake_bias: float
+    arb_bias: float
+
 
 CATEGORY_TARGETS_V22 = {
     # GT3 / Race - Engineer validated
