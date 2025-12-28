@@ -1649,68 +1649,72 @@ class MainWindow(QMainWindow):
     
     def _auto_select_car_track(self, car_model: str, track: str, track_config: str) -> None:
         """Auto-select car and track in the UI based on live detection."""
-        print(f"[DEBUG] _auto_select_car_track called: car={car_model}, track={track}, config={track_config}")
+        print(f"[AUTO-SELECT] Called: car='{car_model}', track='{track}', config='{track_config}'")
         
+        # Get cars and tracks from cache or scan
         cars = self._cars_cache if self._cars_cache else self.connector.get_cars()
         tracks = self._tracks_cache if self._tracks_cache else self.connector.get_tracks()
         
-        print(f"[DEBUG] Cars cache: {len(cars) if cars else 0} cars")
-        print(f"[DEBUG] Tracks cache: {len(tracks) if tracks else 0} tracks")
-
-        # If scans are empty, inject fallback entries so selection becomes possible
-        if not cars:
-            cars = [Car(car_id=car_model, name=car_model)]
+        # Update cache
+        if cars and not self._cars_cache:
             self._cars_cache = cars
-            self.car_track_selector.set_cars(cars)
-
-        if not tracks:
-            tracks = [Track(track_id=track, name=track, config=track_config)]
+        if tracks and not self._tracks_cache:
             self._tracks_cache = tracks
-            self.car_track_selector.set_tracks(tracks)
+        
+        print(f"[AUTO-SELECT] Cars: {len(cars) if cars else 0}, Tracks: {len(tracks) if tracks else 0}")
 
-        # Find and select car
-        car_found = False
-        print(f"[DEBUG] Searching for car: {car_model}")
-        for car in cars:
-            if car.car_id == car_model or car_model in car.car_id:
-                print(f"[DEBUG] Car found! Setting: {car.car_id}")
-                self.car_track_selector.set_selected_car(car.car_id)
-                car_found = True
-                break
-
-        if not car_found:
-            # Add fallback car if not found
-            print(f"[DEBUG] Car not found in cache, adding fallback: {car_model}")
+        # ALWAYS ensure we have at least the detected car/track in the lists
+        # This handles mods that aren't in the AC content folder
+        
+        # Check if car exists in list
+        car_exists = any(c.car_id == car_model for c in (cars or []))
+        if not car_exists and car_model:
+            print(f"[AUTO-SELECT] Car '{car_model}' not in list, adding fallback")
             fallback_car = Car(car_id=car_model, name=car_model)
             if not self._cars_cache:
                 self._cars_cache = []
             self._cars_cache.append(fallback_car)
-            self.car_track_selector.set_cars(self._cars_cache)
-            self.car_track_selector.set_selected_car(fallback_car.car_id)
-            car_found = True
-            print(f"[DEBUG] Fallback car added and selected")
-
-        # Find and select track
-        track_found = False
-        print(f"[DEBUG] Searching for track: {track}")
-        for t in tracks:
-            if t.track_id == track or track in t.track_id:
-                print(f"[DEBUG] Track found! Setting: {t.track_id}")
-                self.car_track_selector.set_selected_track(t.track_id, track_config)
-                track_found = True
-                break
-
-        if not track_found:
-            # Add fallback track if not found
-            print(f"[DEBUG] Track not found in cache, adding fallback: {track}")
-            fallback_track = Track(track_id=track, name=track, config=track_config)
+            cars = self._cars_cache
+            self.car_track_selector.set_cars(cars)
+        
+        # Check if track exists in list
+        track_exists = any(t.track_id == track for t in (tracks or []))
+        if not track_exists and track:
+            print(f"[AUTO-SELECT] Track '{track}' not in list, adding fallback")
+            fallback_track = Track(track_id=track, name=track, config=track_config or "")
             if not self._tracks_cache:
                 self._tracks_cache = []
             self._tracks_cache.append(fallback_track)
-            self.car_track_selector.set_tracks(self._tracks_cache)
-            self.car_track_selector.set_selected_track(fallback_track.track_id, track_config)
-            track_found = True
-            print(f"[DEBUG] Fallback track added and selected")
+            tracks = self._tracks_cache
+            self.car_track_selector.set_tracks(tracks)
+
+        # Select car
+        car_found = False
+        if car_model:
+            print(f"[AUTO-SELECT] Selecting car: {car_model}")
+            car_found = self.car_track_selector.set_selected_car(car_model)
+            if not car_found:
+                # Try partial match
+                for car in (cars or []):
+                    if car_model in car.car_id or car.car_id in car_model:
+                        car_found = self.car_track_selector.set_selected_car(car.car_id)
+                        if car_found:
+                            break
+            print(f"[AUTO-SELECT] Car selected: {car_found}")
+
+        # Select track (fallback already added above if needed)
+        track_found = False
+        if track:
+            print(f"[AUTO-SELECT] Selecting track: {track}")
+            track_found = self.car_track_selector.set_selected_track(track, track_config)
+            if not track_found:
+                # Try partial match
+                for t in (tracks or []):
+                    if track in t.track_id or t.track_id in track:
+                        track_found = self.car_track_selector.set_selected_track(t.track_id, track_config)
+                        if track_found:
+                            break
+            print(f"[AUTO-SELECT] Track selected: {track_found}")
         
         # Notify user and update Quick Start widget
         print(f"[DEBUG] car_found={car_found}, track_found={track_found}")

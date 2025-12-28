@@ -278,6 +278,11 @@ class CarTrackSelector(QWidget):
                 print(f"[CAR_SELECTOR] Found car: {car.name}")
                 print(f"[CAR_SELECTOR] Setting combo index to {i}")
                 self.car_combo.setCurrentIndex(i)
+                
+                # Force update the displayed text for editable combo box
+                display_text = self.car_combo.itemText(i)
+                self.car_combo.setCurrentText(display_text)
+                
                 # Force update internal state in case signal doesn't fire
                 self._selected_car = car
                 print(f"[CAR_SELECTOR] After setCurrentIndex: combo index={self.car_combo.currentIndex()}")
@@ -314,6 +319,11 @@ class CarTrackSelector(QWidget):
                 if (not config_normalized and not track_config_normalized) or (track_config_normalized == config_normalized):
                     print(f"[TRACK_SELECTOR] Setting combo index to {i}")
                     self.track_combo.setCurrentIndex(i)
+                    
+                    # Force update the displayed text for editable combo box
+                    display_text = self.track_combo.itemText(i)
+                    self.track_combo.setCurrentText(display_text)
+                    
                     # Force update internal state in case signal doesn't fire
                     self._selected_track = track
                     print(f"[TRACK_SELECTOR] After setCurrentIndex: combo index={self.track_combo.currentIndex()}")
