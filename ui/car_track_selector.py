@@ -323,6 +323,7 @@ class CarTrackSelector(QWidget):
         print(f"[TRACK_SELECTOR] Searching for track_id='{track_id}', config='{config_normalized}'")
         print(f"[TRACK_SELECTOR] Total tracks in combo: {self.track_combo.count()}")
         
+        # First pass: try exact match (track_id + config)
         for i in range(self.track_combo.count()):
             track = self.track_combo.itemData(i)
             if track and track.track_id == track_id:
@@ -351,6 +352,20 @@ class CarTrackSelector(QWidget):
                     return True
                 else:
                     print(f"[TRACK_SELECTOR] Config mismatch: '{track_config_normalized}' != '{config_normalized}'")
+        
+        # Second pass: if no exact match, try matching just track_id (ignore config)
+        print(f"[TRACK_SELECTOR] No exact match, trying track_id only...")
+        for i in range(self.track_combo.count()):
+            track = self.track_combo.itemData(i)
+            if track and track.track_id == track_id:
+                print(f"[TRACK_SELECTOR] Found track by ID only: {track.name}")
+                self.track_combo.setCurrentIndex(i)
+                display_text = self.track_combo.itemText(i)
+                self.track_combo.setCurrentText(display_text)
+                self._selected_track = track
+                self._on_track_changed(i)
+                print(f"[TRACK_SELECTOR] ✅ Selected track (ID match): {track.name}")
+                return True
         
         print(f"[TRACK_SELECTOR] ❌ Track not found: {track_id} (config={config})")
         return False
