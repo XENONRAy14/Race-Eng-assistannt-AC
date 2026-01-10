@@ -198,8 +198,188 @@ class TrackKnowledge:
     key_corners: List[str] = field(default_factory=list)
 
 
+class TrackAnalyzer:
+    """
+    Analyzes track characteristics automatically from track name and config.
+    No hardcoded database - generates advice dynamically.
+    """
+    
+    # Keywords for track type detection
+    TOUGE_KEYWORDS = [
+        "touge", "pass", "mountain", "downhill", "uphill", "hill",
+        "akina", "akagi", "usui", "irohazaka", "haruna", "myogi",
+        "sadamine", "happogahara", "tsukuba", "hakone", "nagao",
+        "tsubaki", "shomaru", "momiji", "gunma", "saitama"
+    ]
+    
+    DRIFT_KEYWORDS = [
+        "drift", "ebisu", "meihan", "nikko", "matsuri", "d1",
+        "formula_d", "tandem", "gymkhana"
+    ]
+    
+    HIGHWAY_KEYWORDS = [
+        "shutoko", "shuto", "highway", "expressway", "wangan",
+        "bayshore", "c1", "osaka", "nagoya", "tokyo"
+    ]
+    
+    CIRCUIT_KEYWORDS = [
+        "circuit", "gp", "grand_prix", "raceway", "speedway",
+        "nurburgring", "spa", "monza", "silverstone", "suzuka",
+        "fuji", "motegi", "autopolis", "okayama"
+    ]
+    
+    DOWNHILL_KEYWORDS = ["downhill", "descent", "down"]
+    UPHILL_KEYWORDS = ["uphill", "climb", "up", "hillclimb"]
+    
+    def analyze(self, track: Track) -> TrackKnowledge:
+        """Analyze track and generate knowledge automatically."""
+        track_id_lower = track.track_id.lower()
+        track_name_lower = track.name.lower() if track.name else ""
+        config_lower = track.config.lower() if hasattr(track, 'config') and track.config else ""
+        
+        combined = f"{track_id_lower} {track_name_lower} {config_lower}"
+        
+        # Detect track type
+        track_type = self._detect_type(combined)
+        
+        # Detect characteristics
+        has_downhill = any(kw in combined for kw in self.DOWNHILL_KEYWORDS)
+        has_uphill = any(kw in combined for kw in self.UPHILL_KEYWORDS)
+        is_touge = "touge" in track_type
+        is_drift = track_type == "drift"
+        is_highway = track_type == "highway"
+        
+        # Generate knowledge
+        knowledge = TrackKnowledge(
+            track_id=track.track_id,
+            name=track.name or track.track_id,
+            type=track_type,
+            has_tight_hairpins=is_touge or is_drift,
+            has_high_speed_sections=is_highway or track_type == "circuit" or is_touge,
+            has_elevation_change=is_touge or has_downhill or has_uphill,
+            is_narrow=is_touge,
+            has_cliff_edges=is_touge,
+            overtake_zones=self._generate_overtake_zones(track_type, is_touge),
+            danger_zones=self._generate_danger_zones(track_type, is_touge, has_downhill),
+            key_corners=self._generate_corner_tips(track_type, is_touge, has_downhill)
+        )
+        
+        return knowledge
+    
+    def _detect_type(self, combined: str) -> str:
+        """Detect track type from keywords."""
+        if any(kw in combined for kw in self.DRIFT_KEYWORDS):
+            return "drift"
+        if any(kw in combined for kw in self.HIGHWAY_KEYWORDS):
+            return "highway"
+        if any(kw in combined for kw in self.TOUGE_KEYWORDS):
+            if any(kw in combined for kw in self.DOWNHILL_KEYWORDS):
+                return "touge_downhill"
+            elif any(kw in combined for kw in self.UPHILL_KEYWORDS):
+                return "touge_uphill"
+            return "touge"
+        if any(kw in combined for kw in self.CIRCUIT_KEYWORDS):
+            return "circuit"
+        
+        # Default based on common patterns
+        if "street" in combined or "city" in combined:
+            return "street"
+        
+        return "unknown"
+    
+    def _generate_overtake_zones(self, track_type: str, is_touge: bool) -> List[str]:
+        """Generate overtaking advice based on track type."""
+        if is_touge:
+            return [
+                "Lignes droites entre les virages",
+                "Sortie de virage si meilleure traction",
+                "Sections rapides avant les épingles"
+            ]
+        elif track_type == "highway":
+            return [
+                "Partout si tu as la puissance",
+                "Intérieur des grandes courbes",
+                "Après les jonctions"
+            ]
+        elif track_type == "drift":
+            return [
+                "Difficile en tandem - reste dans ta ligne",
+                "Initiation de drift plus agressive"
+            ]
+        elif track_type == "circuit":
+            return [
+                "Zones de freinage",
+                "Lignes droites principales",
+                "Sortie des chicanes"
+            ]
+        else:
+            return ["Analyse le circuit pour trouver les zones de dépassement"]
+    
+    def _generate_danger_zones(self, track_type: str, is_touge: bool, has_downhill: bool) -> List[str]:
+        """Generate danger zone warnings based on track type."""
+        zones = []
+        
+        if is_touge:
+            zones.append("Épingles serrées - pas de dépassement risqué")
+            zones.append("Virages en aveugle")
+            if has_downhill:
+                zones.append("Freins surchauffés en descente")
+        
+        if track_type == "highway":
+            zones.append("Murs de béton des deux côtés")
+            zones.append("Jonctions avec changement de voie")
+        
+        if track_type == "drift":
+            zones.append("Murs proches - garde ta trajectoire")
+        
+        if not zones:
+            zones.append("Reste prudent dans les zones inconnues")
+        
+        return zones
+    
+    def _generate_corner_tips(self, track_type: str, is_touge: bool, has_downhill: bool) -> List[str]:
+        """Generate corner tips based on track type."""
+        tips = []
+        
+        if is_touge:
+            tips.append("Garde ton rythme - la régularité bat la vitesse pure")
+            if has_downhill:
+                tips.append("Freine PLUS TÔT que tu ne le penses - la pente accélère")
+                tips.append("Utilise le frein moteur pour préserver les freins")
+            else:
+                tips.append("Puissance en sortie de virage = avantage")
+        
+        if track_type == "highway":
+            tips.append("Grandes courbes à haute vitesse : reste smooth")
+            tips.append("L'aéro compte beaucoup à 200+ km/h")
+        
+        if track_type == "drift":
+            tips.append("Initie le drift tôt pour la bonne trajectoire")
+            tips.append("Angle > Vitesse pour le style")
+        
+        if track_type == "circuit":
+            tips.append("Apprends les points de freinage")
+            tips.append("Trajectoire optimale = temps au tour")
+        
+        if not tips:
+            tips.append("Apprends le circuit tour par tour")
+        
+        return tips
+
+
 class TrackDatabase:
-    """Database of known tracks with specific advice."""
+    """Legacy database - now uses TrackAnalyzer for dynamic analysis."""
+    
+    def __init__(self):
+        self.analyzer = TrackAnalyzer()
+    
+    def get_track_knowledge(self, track: Track) -> TrackKnowledge:
+        """Get knowledge for any track - auto-generated."""
+        return self.analyzer.analyze(track)
+
+
+class _LegacyTrackDatabase:
+    """Old hardcoded database - kept for reference only."""
     
     TRACKS: Dict[str, TrackKnowledge] = {
         # ═══════════════════════════════════════════════════════════════
