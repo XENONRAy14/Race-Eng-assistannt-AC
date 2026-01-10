@@ -1096,6 +1096,39 @@ class MainWindow(QMainWindow):
         """Handle profile slider changes."""
         # Get current preferences from sliders and update profile
         prefs = self.sliders_panel.get_preferences()
+        
+        # CRITICAL: Apply slider values to the current profile!
+        # Note: We modify the BASE attributes, not the computed properties
+        if self._current_profile:
+            # Aggression slider (0-100) -> safety_aggression (0=safe, 100=aggressive)
+            aggression = prefs.get("aggression", 50)
+            self._current_profile.safety_aggression = aggression
+            
+            # Stability slider (0-100) -> stability_rotation (0=stable, 100=rotational)
+            # Invert: high stability slider = low rotation
+            stability = prefs.get("stability", 50)
+            self._current_profile.stability_rotation = 100 - stability
+            
+            # Downforce/Comfort slider (0-100) -> comfort_performance (0=comfort, 100=performance)
+            downforce = prefs.get("downforce", 50)
+            self._current_profile.comfort_performance = downforce
+            
+            # Expert mode sliders
+            if "oversteer_tendency" in prefs:
+                oversteer = prefs.get("oversteer_tendency", 50)
+                self._current_profile.stability_rotation = oversteer
+            
+            if "diff_aggression" in prefs:
+                diff_agg = prefs.get("diff_aggression", 50)
+                # Higher diff aggression = more drift-oriented (lower drift_grip)
+                self._current_profile.drift_grip = 100 - diff_agg
+            
+            print(f"[PROFILE] Updated: safety_aggression={self._current_profile.safety_aggression:.0f}, "
+                  f"stability_rotation={self._current_profile.stability_rotation:.0f}, "
+                  f"comfort_performance={self._current_profile.comfort_performance:.0f}")
+            print(f"[PROFILE] Factors: aggression={self._current_profile.aggression_factor:.2f}, "
+                  f"rotation={self._current_profile.rotation_factor:.2f}")
+        
         # Update recommendation based on new preferences
         self._update_recommendation()
         self._update_preview()
