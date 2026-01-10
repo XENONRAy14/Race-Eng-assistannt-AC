@@ -1076,6 +1076,8 @@ class MainWindow(QMainWindow):
     
     def _on_selection_changed(self, car: Optional[Car], track: Optional[Track]) -> None:
         """Handle car/track selection change."""
+        print(f"[SELECTION] _on_selection_changed called: car={car.car_id if car else None}, track={track.track_id if track else None}")
+        
         self._update_recommendation()
         
         # Update presets panel with selected car
@@ -1084,8 +1086,10 @@ class MainWindow(QMainWindow):
         
         # Update advisor panel with new car/track
         if car:
+            print(f"[ADVISOR] Setting car: {car.car_id}")
             self.advisor_panel.set_car(car)
         if track:
+            print(f"[ADVISOR] Setting track: {track.track_id}")
             self.advisor_panel.set_track(track)
     
     def _on_behavior_changed(self, behavior_id: str) -> None:

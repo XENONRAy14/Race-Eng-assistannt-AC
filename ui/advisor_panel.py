@@ -224,6 +224,8 @@ class AdvisorPanel(QWidget):
         Update advice based on new car, track, or setup.
         Call this when any of these change.
         """
+        print(f"[ADVISOR_PANEL] update_advice called: car={car.car_id if car else None}, track={track.track_id if track else None}")
+        
         # Update stored values
         if car is not None:
             self._current_car = car
@@ -232,19 +234,24 @@ class AdvisorPanel(QWidget):
         if setup is not None:
             self._current_setup = setup
         
+        print(f"[ADVISOR_PANEL] Current state: car={self._current_car.car_id if self._current_car else None}, track={self._current_track.track_id if self._current_track else None}")
+        
         # Need at least car to generate advice
         if self._current_car is None:
+            print("[ADVISOR_PANEL] No car, showing placeholder")
             self._show_placeholder()
             self.advice_count.setText("0 conseils")
             self.status_label.setText("En attente de sélection...")
             return
         
         # Generate advice
+        print(f"[ADVISOR_PANEL] Generating advice...")
         advice_list = self.advisor.generate_advice(
             car=self._current_car,
             track=self._current_track,
             setup=self._current_setup
         )
+        print(f"[ADVISOR_PANEL] Generated {len(advice_list)} advice items")
         
         # Clear and rebuild
         self._clear_advice()

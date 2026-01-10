@@ -231,8 +231,10 @@ class TrackAnalyzer:
     DOWNHILL_KEYWORDS = ["downhill", "descent", "down"]
     UPHILL_KEYWORDS = ["uphill", "climb", "up", "hillclimb"]
     
-    def analyze(self, track: Track) -> TrackKnowledge:
+    def analyze(self, track: Track) -> Optional[TrackKnowledge]:
         """Analyze track and generate knowledge automatically."""
+        if track is None:
+            return None
         track_id_lower = track.track_id.lower()
         track_name_lower = track.name.lower() if track.name else ""
         config_lower = track.config.lower() if hasattr(track, 'config') and track.config else ""
@@ -373,8 +375,10 @@ class TrackDatabase:
     def __init__(self):
         self.analyzer = TrackAnalyzer()
     
-    def get_track_knowledge(self, track: Track) -> TrackKnowledge:
+    def get_track_knowledge(self, track: Track) -> Optional[TrackKnowledge]:
         """Get knowledge for any track - auto-generated."""
+        if track is None:
+            return None
         return self.analyzer.analyze(track)
 
 
