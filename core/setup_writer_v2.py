@@ -164,12 +164,19 @@ class SetupWriterV2:
         """
         Convert our internal setup values to AC format.
         
+        CRITICAL: Only modify parameters that exist in the car's setup!
+        AC ignores unknown parameters, so we must respect the car's available settings.
+        
         Uses:
         - Dynamic mapping for parameter names
         - Smart converter for value conversion
         - Existing values for type detection
         """
+        # IMPORTANT: Only use parameters that exist for this car
+        # If no existing params found, we'll use a minimal common set
         final_params = dict(existing_params)  # Start with existing as base
+        
+        print(f"[WRITER V2.2] Existing params for {car_id}: {list(existing_params.keys())}")
         
         # Internal name to section/key mapping
         internal_to_setup = {
@@ -242,8 +249,15 @@ class SetupWriterV2:
             "fuel": ("FUEL", "FUEL"),
         }
         
-        # Process each parameter
+        # Process each parameter - ONLY if it exists in the car's setup!
         for internal_name, ac_name in car_mapping.items():
+            # CRITICAL: Only modify parameters that exist for this car
+            if existing_params and ac_name not in existing_params:
+                print(f"[WRITER V2.2] Skipping {ac_name} - not available for this car")
+                if self.logger:
+                    self.logger.log_ignored(ac_name, f"Parameter not available for {car_id}")
+                continue
+            
             # Get our internal value
             if internal_name not in internal_to_setup:
                 continue
