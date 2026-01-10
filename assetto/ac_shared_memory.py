@@ -218,6 +218,7 @@ class ACLiveData:
     
     # Car and track info
     car_model: str = ""
+    car_skin: str = ""  # Fallback for car detection when car_model is invalid
     track: str = ""
     track_config: str = ""
     
@@ -452,8 +453,16 @@ class ACSharedMemory:
         static = self.read_static()
         if static:
             data.car_model = static.carModel.strip('\x00')
+            data.car_skin = static.carSkin.strip('\x00')
             data.track = static.track.strip('\x00')
             data.track_config = static.trackConfiguration.strip('\x00')
+            
+            # Fallback: if car_model is invalid (e.g., "0"), try to detect from skin
+            if not data.car_model or data.car_model in ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]:
+                detected_car = self._detect_car_from_skin(data.car_skin)
+                if detected_car:
+                    data.car_model = detected_car
+                    print(f"[SHARED_MEMORY] Car detected from skin: {detected_car}")
         
         # Read graphics info (session)
         graphics = self.read_graphics()
@@ -530,6 +539,77 @@ class ACSharedMemory:
             return car, track, config
         
         return "", "", ""
+    
+    def _detect_car_from_skin(self, skin_name: str) -> Optional[str]:
+        """
+        Try to detect car model from skin name when carModel is invalid.
+        Many mods have skins that contain car-identifying keywords.
+        """
+        if not skin_name:
+            return None
+        
+        skin_lower = skin_name.lower()
+        
+        # Known skin patterns -> car model mapping
+        skin_patterns = {
+            # AE86 variants
+            "tsuchiya": "ks_toyota_ae86",
+            "ae86": "ks_toyota_ae86",
+            "trueno": "ks_toyota_ae86",
+            "levin": "ks_toyota_ae86",
+            "hachi": "ks_toyota_ae86",
+            "takumi": "ks_toyota_ae86",
+            "initial_d": "ks_toyota_ae86",
+            
+            # Nissan GT-R
+            "gtr": "ks_nissan_gtr",
+            "gt-r": "ks_nissan_gtr",
+            "skyline": "ks_nissan_skyline",
+            "r32": "ks_nissan_skyline_r32",
+            "r33": "ks_nissan_skyline_r33",
+            "r34": "ks_nissan_skyline_r34",
+            
+            # Mazda RX-7
+            "rx7": "ks_mazda_rx7",
+            "rx-7": "ks_mazda_rx7",
+            "fd3s": "ks_mazda_rx7",
+            "fc3s": "ks_mazda_rx7_fc",
+            "keisuke": "ks_mazda_rx7",
+            "ryosuke": "ks_mazda_rx7_fc",
+            
+            # Honda
+            "s2000": "ks_honda_s2000",
+            "nsx": "ks_honda_nsx",
+            "civic": "ks_honda_civic",
+            
+            # BMW
+            "m3_e30": "bmw_m3_e30",
+            "e30": "bmw_m3_e30",
+            "m3_e36": "bmw_m3_e36",
+            "e36": "bmw_m3_e36",
+            "m3_e46": "bmw_m3_e46",
+            "e46": "bmw_m3_e46",
+            
+            # Toyota Supra
+            "supra": "ks_toyota_supra",
+            "jza80": "ks_toyota_supra",
+            "mk4": "ks_toyota_supra",
+            
+            # Mitsubishi Evo
+            "evo": "ks_mitsubishi_evo",
+            "lancer": "ks_mitsubishi_evo",
+            
+            # Subaru
+            "impreza": "ks_subaru_impreza",
+            "wrx": "ks_subaru_impreza",
+            "sti": "ks_subaru_impreza",
+        }
+        
+        for pattern, car_model in skin_patterns.items():
+            if pattern in skin_lower:
+                return car_model
+        
+        return None
     
     def is_ac_running(self) -> bool:
         """Check if AC is running and in a session."""

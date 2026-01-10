@@ -364,6 +364,35 @@ class TrackDatabase:
         ),
         
         # ═══════════════════════════════════════════════════════════════
+        # AKAGI (Ek_Akagi mod)
+        # ═══════════════════════════════════════════════════════════════
+        "akagi": TrackKnowledge(
+            track_id="ek_akagi",
+            name="Mt. Akagi",
+            type="touge_downhill",
+            has_tight_hairpins=True,
+            has_high_speed_sections=True,
+            has_elevation_change=True,
+            is_narrow=True,
+            has_cliff_edges=True,
+            overtake_zones=[
+                "Longue ligne droite après la série de virages",
+                "Section rapide avant les épingles",
+                "Sortie des virages moyens si meilleure traction"
+            ],
+            danger_zones=[
+                "Épingles serrées - garde ta ligne",
+                "Virages en aveugle avec dénivelé",
+                "Bord de route sans barrière"
+            ],
+            key_corners=[
+                "Série de virages rapides : garde le rythme, pas de freinage brusque",
+                "Épingles : freine tôt, la descente accélère la voiture",
+                "Utilise le frein moteur pour préserver les freins"
+            ]
+        ),
+        
+        # ═══════════════════════════════════════════════════════════════
         # MYOGI
         # ═══════════════════════════════════════════════════════════════
         "myogi": TrackKnowledge(
