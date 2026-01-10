@@ -1791,6 +1791,11 @@ class MainWindow(QMainWindow):
             if car_obj and track_obj:
                 print(f"[DEBUG] Updating Quick Start widget: {car_obj.name} @ {track_obj.name}")
                 self.quick_start_widget.set_status("ready", car_obj.name, track_obj.name)
+                
+                # CRITICAL: Update advisor panel with auto-detected car/track
+                print(f"[AUTO-SELECT] Updating advisor panel with car={car_obj.car_id}, track={track_obj.track_id}")
+                self.advisor_panel.set_car(car_obj)
+                self.advisor_panel.set_track(track_obj)
             else:
                 print(f"[DEBUG] WARNING: car_obj or track_obj is None!")
             
