@@ -140,6 +140,12 @@ class Setup:
             return default
         return self.sections[section].get(key, default)
     
+    def has_value(self, section: str, key: str) -> bool:
+        """Check if a value exists in a specific section."""
+        if section not in self.sections:
+            return False
+        return key in self.sections[section].values
+    
     def to_ini_string(self) -> str:
         """Convert entire setup to INI format string."""
         lines = [

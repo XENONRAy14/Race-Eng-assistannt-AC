@@ -186,15 +186,26 @@ class CarTrackSelector(QWidget):
     
     def set_cars(self, cars: list[Car]) -> None:
         """Set available cars."""
+        # Remember current selection before clearing
+        current_car_id = self._selected_car.car_id if self._selected_car else None
+        
         self._cars = cars
         self.car_combo.clear()
         self.car_combo.addItem("-- Select Car --", None)
         
         for car in cars:
             self.car_combo.addItem(car.name, car)
+        
+        # Restore selection if it was set
+        if current_car_id:
+            self.select_car_by_id(current_car_id)
     
     def set_tracks(self, tracks: list[Track]) -> None:
         """Set available tracks."""
+        # Remember current selection before clearing
+        current_track_id = self._selected_track.track_id if self._selected_track else None
+        current_config = self._selected_track.config if self._selected_track else None
+        
         self._tracks = tracks
         self.track_combo.clear()
         self.track_combo.addItem("-- Select Track --", None)
@@ -204,6 +215,10 @@ class CarTrackSelector(QWidget):
             if track.config and track.config != "default":
                 display_name += f" ({track.config})"
             self.track_combo.addItem(display_name, track)
+        
+        # Restore selection if it was set
+        if current_track_id:
+            self.select_track_by_id(current_track_id, current_config)
     
     def _on_car_changed(self, index: int) -> None:
         """Handle car selection change."""

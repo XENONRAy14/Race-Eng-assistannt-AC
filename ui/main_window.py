@@ -92,6 +92,7 @@ class MainWindow(QMainWindow):
         self._telemetry_timer: Optional[QTimer] = None
         self._last_detected_car: str = ""
         self._last_detected_track: str = ""
+        self._last_detected_track_config: str = ""
         self._auto_generate_enabled: bool = True  # Auto-generate on detection
         self._cars_cache: list[Car] = []
         self._tracks_cache: list[Track] = []
@@ -1337,16 +1338,22 @@ class MainWindow(QMainWindow):
             # Check for car/track change FIRST (works in menu or in session)
             if live_data.is_connected and live_data.car_model and live_data.track:
                 print(f"[DEBUG] Checking car/track change:")
-                print(f"[DEBUG]   Current: car='{live_data.car_model}', track='{live_data.track}'")
-                print(f"[DEBUG]   Last: car='{self._last_detected_car}', track='{self._last_detected_track}'")
-                print(f"[DEBUG]   Changed? {live_data.car_model != self._last_detected_car or live_data.track != self._last_detected_track}")
+                print(f"[DEBUG]   Current: car='{live_data.car_model}', track='{live_data.track}', config='{live_data.track_config}'")
+                print(f"[DEBUG]   Last: car='{self._last_detected_car}', track='{self._last_detected_track}', config='{self._last_detected_track_config}'")
                 
-                if (live_data.car_model != self._last_detected_car or 
-                    live_data.track != self._last_detected_track):
+                # Check if car, track, OR track_config changed
+                car_changed = live_data.car_model != self._last_detected_car
+                track_changed = live_data.track != self._last_detected_track
+                config_changed = live_data.track_config != self._last_detected_track_config
+                
+                print(f"[DEBUG]   Changed? car={car_changed}, track={track_changed}, config={config_changed}")
+                
+                if car_changed or track_changed or config_changed:
                     
                     print(f"[DEBUG] CAR/TRACK CHANGED! Calling _auto_select_car_track...")
                     self._last_detected_car = live_data.car_model
                     self._last_detected_track = live_data.track
+                    self._last_detected_track_config = live_data.track_config
                     
                     # Reset track map for new track
                     self._track_map_initialized = False
