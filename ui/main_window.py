@@ -23,6 +23,7 @@ from ui.telemetry_panel import TelemetryPanel, TelemetryData
 from ui.presets_panel import PresetsPanel
 from ui.driving_style_widget import DrivingStyleWidget
 from ui.track_map_widget import TrackMapWidget
+from ui.advisor_panel import AdvisorPanel
 
 from models.driver_profile import DriverProfile
 from models.setup import Setup
@@ -450,7 +451,7 @@ class MainWindow(QMainWindow):
         return header
     
     def _create_left_panel(self) -> QWidget:
-        """Create the left panel with car/track selection."""
+        """Create the left panel with car/track selection and advisor."""
         panel = QFrame()
         panel.setStyleSheet("""
             QFrame {
@@ -461,11 +462,16 @@ class MainWindow(QMainWindow):
         
         layout = QVBoxLayout(panel)
         layout.setContentsMargins(10, 10, 10, 10)
+        layout.setSpacing(10)
         
         # Car/Track selector
         self.car_track_selector = CarTrackSelector()
         self.car_track_selector.selectionChanged.connect(self._on_selection_changed)
         layout.addWidget(self.car_track_selector)
+        
+        # Race Engineer Advisor Panel
+        self.advisor_panel = AdvisorPanel()
+        layout.addWidget(self.advisor_panel, 1)  # Stretch to fill space
         
         return panel
     
@@ -1075,6 +1081,12 @@ class MainWindow(QMainWindow):
         # Update presets panel with selected car
         if car:
             self.presets_panel.set_current_car(car.car_id)
+        
+        # Update advisor panel with new car/track
+        if car:
+            self.advisor_panel.set_car(car)
+        if track:
+            self.advisor_panel.set_track(track)
     
     def _on_behavior_changed(self, behavior_id: str) -> None:
         """Handle behavior selection change."""
@@ -1616,6 +1628,9 @@ class MainWindow(QMainWindow):
         # Save to repository
         self._current_setup = optimized_setup
         self.repository.save_setup(optimized_setup)
+        
+        # Update advisor panel with setup-based advice
+        self.advisor_panel.set_setup(optimized_setup)
         
         # Step 6: Write to AC using V2.2 writer (with dynamic mapping + smart conversion)
         print(f"[V2.2] Exporting setup with dynamic mapping...")
